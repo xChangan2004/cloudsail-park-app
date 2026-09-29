@@ -2,8 +2,9 @@
 </script>
 
 <template>
-  <view>
-    <t-navbar title="哈哈"></t-navbar>
+  <t-navbar title="首页" placeholder />
+  <view class="index">
+    123
   </view>
 </template>
 

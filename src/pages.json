@@ -1,5 +1,6 @@
 {
   "easycom": {
+    "autoscan": true,
     "custom": {
       "^t-(.*)": "@tdesign/uniapp/$1/$1.vue"
     }
@@ -8,6 +9,12 @@
     //pages数组中第一项表示应用启动页，参考：https://uniapp.dcloud.io/collocation/pages
     {
       "path": "pages/index/index"
+    },
+    {
+      "path": "pages/order/index"
+    },
+    {
+      "path": "pages/mine/index"
     },
     {
       "path": "pages/login/index"
@@ -19,5 +26,24 @@
     "navigationBarTitleText": "云帆智泊",
     "navigationBarBackgroundColor": "#FFFFFF",
     "backgroundColor": "#F8F8F8"
+  },
+  "tabBar": {
+    "color": "#909399",
+    "selectedColor": "#409eff",
+    "backgroundColor": "#ffffff",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/order/index",
+        "text": "订单"
+      },
+      {
+        "pagePath": "pages/mine/index",
+        "text": "我的"
+      }
+    ]
   }
 }
