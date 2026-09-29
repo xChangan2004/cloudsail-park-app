@@ -7,16 +7,16 @@
   "pages": [
     //pages数组中第一项表示应用启动页，参考：https://uniapp.dcloud.io/collocation/pages
     {
-      "path": "pages/index/index",
-      "style": {
-        "navigationBarTitleText": "uni-app"
-      }
+      "path": "pages/index/index"
+    },
+    {
+      "path": "pages/login/index"
     }
   ],
   "globalStyle": {
     "navigationStyle": "custom",
     "navigationBarTextStyle": "black",
-    "navigationBarTitleText": "云帆停车",
+    "navigationBarTitleText": "云帆智泊",
     "navigationBarBackgroundColor": "#FFFFFF",
     "backgroundColor": "#F8F8F8"
   }
