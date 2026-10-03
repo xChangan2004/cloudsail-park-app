@@ -211,7 +211,7 @@ onShow(async () => {
           </view>
           <view class="home__entry">
             <view class="home__entry-icon">
-              <t-icon name="scan"/>
+              <t-icon name="vehicle"/>
             </view>
             <view class="home__entry-label">我的车牌</view>
           </view>
@@ -219,7 +219,7 @@ onShow(async () => {
             <view class="home__entry-icon">
               <t-icon name="coupon"/>
             </view>
-            <view class="home__entry-label">领劵中心</view>
+            <view class="home__entry-label">领券中心</view>
           </view>
         </view>
       </view>
