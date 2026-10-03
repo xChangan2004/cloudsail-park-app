@@ -54,7 +54,7 @@ const onLogin = async () => {
   logging.value = true
   try {
     const res = await login({phone: form.phone, code: form.code})
-    userStore.setLoginInfo(res)
+    userStore.setLoginInfo(res.data)
     uni.reLaunch({url: '/pages/index/index'})
   } finally {
     logging.value = false
