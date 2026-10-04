@@ -21,6 +21,12 @@
       "path": "pages/mine/index"
     },
     {
+      "path": "pages/plate/index"
+    },
+    {
+      "path": "pages/plate/add"
+    },
+    {
       "path": "pages/login/index"
     }
   ],
