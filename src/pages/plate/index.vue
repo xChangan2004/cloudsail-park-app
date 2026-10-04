@@ -56,7 +56,7 @@ const onSetDefault = async (p: CustomerPlate) => {
 
 /** 添加车牌 */
 const onAdd = () => {
-  uni.navigateTo({url: '/pages/plate/add'})
+  uni.navigateTo({url: `/pages/plate/add?isFirst=${plateList.value.length === 0 ? '1' : '0'}`})
 }
 
 onShow(() => {

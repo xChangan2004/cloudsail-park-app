@@ -24,3 +24,15 @@ export const unbindPlate = (id: string) => {
 export const defaultPlate = (id: string) => {
   return http.put(`/plate/${id}/default`)
 }
+
+/** 绑定车牌参数 */
+export interface PlateBindDTO {
+  plateNumber: string
+  energyType: energyType
+  isDefault?: boolean
+}
+
+/** 绑定车牌 */
+export const bindPlate = (data: PlateBindDTO) => {
+  return http.post('/plate', data)
+}
