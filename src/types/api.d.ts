@@ -15,7 +15,7 @@ export interface PageParams {
 
 // 分页响应
 export interface PageDTO<T = any> {
-  total: number
-  pages: number
+  total: string
+  pages: string
   list: T[]
 }
