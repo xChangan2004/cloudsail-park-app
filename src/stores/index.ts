@@ -11,3 +11,4 @@ pinia.use(createPersistedState({
 }))
 
 export default pinia
+export * from './modules/user'

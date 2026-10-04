@@ -1,5 +1,5 @@
 import {createLuchRequest} from 'luch-request'
-import {useUserStore} from "@/stores/modules/user"
+import {useUserStore} from "@/stores"
 import type {Result} from "@/types/api"
 
 const baseURL = import.meta.env.VITE_BASE_URL

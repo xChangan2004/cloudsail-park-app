@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {ref, reactive, onUnmounted} from "vue"
 import {login, sendCode} from "@/api/auth";
-import {useUserStore} from "@/stores/modules/user";
+import {useUserStore} from "@/stores";
 
 // 获取屏幕边界到安全区域的距离
 const {safeAreaInsets} = uni.getSystemInfoSync()
