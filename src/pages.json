@@ -30,6 +30,9 @@
       "path": "pages/coupon/mine"
     },
     {
+      "path": "pages/coupon/center"
+    },
+    {
       "path": "pages/login/index"
     }
   ],

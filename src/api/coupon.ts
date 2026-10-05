@@ -20,3 +20,25 @@ export const getMyCoupons = (status?: CouponStatus) => {
     }
   })
 }
+
+export interface AppCouponTemplateVO {
+  id: string
+  name: string
+  threshold: number
+  amount: number
+  validDays: number
+  remainCount: number
+  received: number
+  perLimit: number
+  canReceive: boolean
+}
+
+/** 可领券列表 */
+export const getCouponTemplates = () => {
+  return http.get<AppCouponTemplateVO[]>('/coupon/templates')
+}
+
+/** 领取优惠券 */
+export const receiveCoupon = (templateId: string) => {
+  return http.post(`/coupon/receive/${templateId}`)
+}
