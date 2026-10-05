@@ -27,6 +27,9 @@
       "path": "pages/plate/add"
     },
     {
+      "path": "pages/coupon/mine"
+    },
+    {
       "path": "pages/login/index"
     }
   ],
