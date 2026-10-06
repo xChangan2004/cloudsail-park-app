@@ -18,6 +18,9 @@
       "path": "pages/order/index"
     },
     {
+      "path": "pages/order/invoice"
+    },
+    {
       "path": "pages/mine/index"
     },
     {
