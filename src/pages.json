@@ -21,6 +21,9 @@
       "path": "pages/order/invoice"
     },
     {
+      "path": "pages/order/detail"
+    },
+    {
       "path": "pages/mine/index"
     },
     {

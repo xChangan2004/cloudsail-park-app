@@ -117,7 +117,7 @@ const goInvoice = (o: AppOrderVO) => {
 
 // 查看详情
 const goDetail = (o: AppOrderVO) => {
-  uni.showToast({title: '订单详情开发中', icon: 'none'})
+  uni.navigateTo({url: `/pages/order/detail?orderId=${o.id}`})
 }
 
 // 疑问
@@ -153,6 +153,7 @@ onReachBottom(() => {
           :key="o.id"
           class="order__card"
           :class="'is-' + STATUS_MAP[o.status]?.class"
+          @click="goDetail(o)"
         >
           <!-- 车场名 + 下单时间 + 状态 -->
           <view class="order__head">
@@ -182,7 +183,6 @@ onReachBottom(() => {
             </template>
             <template v-else>
               <text v-if="o.status === 1" class="order__link is-primary" @tap.stop="goInvoice(o)">开发票</text>
-              <text class="order__link is-secondary" @tap.stop="goDetail(o)">查看详情</text>
               <text v-if="footTip(o)" class="order__foot-tip">{{ footTip(o) }}</text>
             </template>
           </view>
@@ -394,11 +394,6 @@ onReachBottom(() => {
 /* 开发票：蓝色高亮 */
 .order__link.is-primary {
   color: #1a6cf5;
-}
-
-/* 查看详情：灰色次级 */
-.order__link.is-secondary {
-  color: #9aa0a6;
 }
 
 /* tip 恒贴最右 */

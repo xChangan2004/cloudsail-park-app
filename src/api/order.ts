@@ -26,3 +26,25 @@ export const getMyOrders = (params: AppOrderQuery) => {
     params
   })
 }
+
+export interface AppOrderDetailVO {
+  id: string
+  orderNo: string
+  recordId: string
+  lotId: string
+  lotName: string
+  plateNumber: string
+  amount: number
+  discount: number
+  paid: number
+  status: OrderStatus
+  paidTime?: string
+  createTime: string
+  couponName?: string
+  refundTime?: string
+}
+
+/** 我的订单详情 */
+export const getMyOrderDetail = (id: string) => {
+  return http.get<AppOrderDetailVO>(`/orders/${id}`)
+}
