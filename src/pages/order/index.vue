@@ -107,7 +107,7 @@ const footTip = (o: AppOrderVO) => {
 
 // 去缴费
 const goPay = (o: AppOrderVO) => {
-  uni.showToast({title: '收银台开发中', icon: 'none'})
+  uni.navigateTo({url: `/pages/pay/index?orderId=${o.id}`})
 }
 
 // 开发票（后续开发，先占位）

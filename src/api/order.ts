@@ -42,6 +42,7 @@ export interface AppOrderDetailVO {
   createTime: string
   couponName?: string
   refundTime?: string
+  duration?: string
 }
 
 /** 我的订单详情 */

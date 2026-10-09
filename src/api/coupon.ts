@@ -42,3 +42,13 @@ export const getCouponTemplates = () => {
 export const receiveCoupon = (templateId: string) => {
   return http.post(`/coupon/receive/${templateId}`)
 }
+
+/** 查询指定金额下可用的优惠券 */
+export const getUsableCoupons = (amount: number, orderId: string) => {
+  return http.get<AppCouponVO[]>(`/coupon/usable`, {
+    params: {
+      amount,
+      orderId,
+    }
+  })
+}

@@ -63,6 +63,10 @@ const banner = computed(() => {
     sub: time ? `${time} ${suffix}` : suffix
   }
 })
+
+const goPay = () => {
+  uni.navigateTo({url: `/pages/pay/index?orderId=${orderId.value}`})
+}
 </script>
 
 <template>
@@ -161,7 +165,7 @@ const banner = computed(() => {
         </view>
 
         <view v-if="detail?.status === 0" class="bar__cell is-pri">
-          <t-button t-class="bar__btn" size="medium" block theme="primary">
+          <t-button t-class="bar__btn" size="medium" block theme="primary" @click="goPay">
             去支付
           </t-button>
         </view>

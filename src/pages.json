@@ -39,6 +39,9 @@
       "path": "pages/coupon/center"
     },
     {
+      "path": "pages/pay/index"
+    },
+    {
       "path": "pages/login/index"
     }
   ],
