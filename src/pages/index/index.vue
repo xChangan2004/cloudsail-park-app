@@ -1,10 +1,14 @@
 <script setup lang="ts">
-// 获取屏幕边界到安全区域的距离
 import {ref} from "vue";
 import {onShow} from "@dcloudio/uni-app";
 import dayjs from "dayjs";
+import {useUserStore} from "@/stores";
+import {getMyParkingStatus, type MyParkingStatusVO} from "@/api/parking";
 
+// 获取屏幕边界到安全区域的距离
 const {safeAreaInsets} = uni.getSystemInfoSync()
+
+const userStore = useUserStore()
 
 const lng = ref<number>()
 const lat = ref<number>()
@@ -37,45 +41,43 @@ const locate = () => {
   })
 }
 
-const parkingList = ref([
-  {
-    recordId: '1',
-    lotName: '云帆科技园 A 区',
-    plateNumber: '粤F·12345',
-    entryTime: '2026-10-03 07:10:00',
-    parkedMinutes: 82,
-    estimatedFee: 52,
-  },
-  {
-    recordId: '2',
-    lotName: '深南汇购物中心地下车库',
-    plateNumber: '粤F·66666',
-    entryTime: '2026-10-03 04:50:00',
-    parkedMinutes: 225,
-    estimatedFee: 88,
-  },
-])
-
+/** 在场车辆列表 */
+const parkingList = ref<MyParkingStatusVO[]>([])
 const currentCar = ref(0)
 
+/** 获取我的停车状态 */
+const fetchParkingStatus = async () => {
+  if (!userStore.isLogin) {
+    parkingList.value = []
+    return
+  }
+  try {
+    const res = await getMyParkingStatus()
+    parkingList.value = res.data ?? []
+    currentCar.value = 0
+  } catch {
+    // 不做处理
+  }
+}
+
 /** swiper 的 change 事件，detail.current 是当前下标 */
-const onCarChange = (e: {detail: {current: number}}) => {
+const onCarChange = (e: { detail: { current: number } }) => {
   currentCar.value = e.detail.current
 }
 
-/** 后端时间统一 yyyy-MM-dd HH:mm:ss；iOS / 小程序对带空格的格式解析不稳，换成 / */
-const parseTime = (value: string) => dayjs(String(value).replace(/-/g, '/'))
-
-const parkedText = (item: {entryTime?: string; parkedMinutes?: number}) => {
-  const minutes = Number(item.parkedMinutes) || 0
-  const h = Math.floor(minutes / 60)
-  const m = minutes % 60
-  const duration = h > 0 ? `${h} 小时${m ? ` ${m} 分` : ''}` : `${m} 分钟`
-  const entry = item.entryTime ? parseTime(item.entryTime).format('HH:mm') : ''
+const parkedText = (item: MyParkingStatusVO) => {
+  const seconds = Number(item.seconds) || 0
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const duration = h > 0
+    ? (m > 0 ? `${h} 小时 ${m} 分` : `${h} 小时`)
+    : (m > 0 ? `${m} 分钟` : '不足 1 分钟')
+  const entry = item.entryTime ? dayjs(item.entryTime.replace(/-/g, '/')).format('MM-DD HH:mm') : ''
   return entry ? `入场 ${entry} · 已停 ${duration}` : `已停 ${duration}`
 }
 
-const feeText = (item: {estimatedFee?: number | null}) => {
+/** 预估费用文本 */
+const feeText = (item: { estimatedFee?: number | null }) => {
   const fee = item.estimatedFee
   return fee === null || fee === undefined ? '--' : `¥${Number(fee).toFixed(2)}`
 }
@@ -86,7 +88,7 @@ const formatDistance = (distance?: number) => {
 }
 
 /** 「120m · 科苑路 8 号」 */
-const lotSub = (lot: {distance?: number; address?: string}) =>
+const lotSub = (lot: { distance?: number; address?: string }) =>
   [formatDistance(lot.distance), lot.address].filter(Boolean).join(' · ')
 
 const splitFacilities = (facilities?: string) =>
@@ -120,6 +122,7 @@ const lotList = ref([
 
 let inited = false
 onShow(async () => {
+  await fetchParkingStatus()
   if (!inited) {
     inited = true
     await locate()
@@ -143,11 +146,10 @@ onShow(async () => {
     </view>
 
     <view class="home__body">
-      <view class="home__cars">
+      <view v-if="parkingList.length" class="home__cars">
         <swiper
           class="home__swiper"
           :current="currentCar"
-          next-margin="100rpx"
           :circular="parkingList.length > 1"
           :duration="260"
           @change="onCarChange"
@@ -169,7 +171,10 @@ onShow(async () => {
               </view>
 
               <view class="home__car-mid">
-                <text class="home__plate">{{ item.plateNumber }}</text>
+                <text class="home__plate">{{ item.plateNumber?.substring(0, 2) }}·{{
+                    item.plateNumber?.substring(2)
+                  }}
+                </text>
                 <view class="home__car-fee">
                   <text class="home__car-fee-num">{{ feeText(item) }}</text>
                   <text class="home__car-fee-tip">预估</text>
@@ -194,6 +199,13 @@ onShow(async () => {
           <text class="home__dots-tip">共 {{ parkingList.length }} 辆车在场 · 左右滑动切换</text>
         </view>
       </view>
+
+      <image
+        v-else
+        class="home__car-empty"
+        src="/static/images/empty-parking-state.png"
+        mode="widthFix"
+      />
 
       <view class="home__card home__entries-card">
         <view class="home__entries">
@@ -242,7 +254,8 @@ onShow(async () => {
                 v-for="facility in splitFacilities(lot.facilities)"
                 :key="facility"
                 class="home__lot-chip"
-              >{{ facility }}</text>
+              >{{ facility }}
+              </text>
             </view>
           </view>
           <view class="home__lot-spaces">
@@ -322,6 +335,11 @@ onShow(async () => {
 .home__cars {
   display: flex;
   flex-direction: column;
+}
+
+.home__car-empty {
+  display: block;
+  width: 100%;
 }
 
 /*
