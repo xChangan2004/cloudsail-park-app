@@ -135,7 +135,7 @@ onLoad((query) => {
   <view class="pay">
     <t-navbar title="收银台" left-arrow placeholder/>
 
-    <view class="pay__body">
+    <view v-if="order" class="pay__body">
       <!-- 订单金额 -->
       <view class="hero">
         <view class="hero__label">订单金额</view>
@@ -190,18 +190,21 @@ onLoad((query) => {
         </view>
         <view class="card__tip">点击支付后将打开支付宝</view>
       </view>
+    </view>
 
-      <view v-if="order && order?.status === 0" class="bar">
-        <t-button
-          t-class="bar__btn"
-          size="medium"
-          block
-          theme="primary"
-          :loading="paying"
-          @click="onPay"
-        >立即支付 ¥{{ payable.toFixed(2) }}
-        </t-button>
-      </view>
+    <view v-else-if="loading" class="pay__empty">加载中...</view>
+    <view v-else class="pay__empty">订单不存在或已失效</view>
+
+    <view v-if="order && order?.status === 0" class="bar">
+      <t-button
+        t-class="bar__btn"
+        size="medium"
+        block
+        theme="primary"
+        :loading="paying"
+        @click="onPay"
+      >立即支付 ¥{{ payable.toFixed(2) }}
+      </t-button>
     </view>
   </view>
 </template>
@@ -331,11 +334,23 @@ onLoad((query) => {
   padding: 25rpx 30rpx;
   background: #fff;
   padding-bottom: calc(25rpx + env(safe-area-inset-bottom));
+}
+
+:deep(.bar__btn) {
   --td-button-border-radius: 47rpx;
   --td-button-medium-height: 88rpx;
   --td-button-primary-bg-color: #409eff;
   --td-button-primary-border-color: #409eff;
   --td-button-primary-active-bg-color: #2b7cd3;
   --td-button-primary-active-border-color: #2b7cd3;
+}
+
+.pay__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 200rpx 0;
+  font-size: 26rpx;
+  color: #909399;
 }
 </style>
