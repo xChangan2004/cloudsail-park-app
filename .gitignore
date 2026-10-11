@@ -16,6 +16,7 @@ dist
 .idea
 .vscode/*
 !.vscode/extensions.json
+.hbuilderx
 *.suo
 *.ntvs*
 *.njsproj
