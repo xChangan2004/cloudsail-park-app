@@ -10,8 +10,8 @@
     {
       "path": "pages/index/index",
       "style": {
-        "enablePullDownRefresh": true,
-        "backgroundTextStyle": "dark"
+        "enablePullDownRefresh": false,
+        "disableScroll": true
       }
     },
     {

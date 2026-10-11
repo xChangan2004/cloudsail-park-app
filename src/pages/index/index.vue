@@ -1,14 +1,23 @@
 <script setup lang="ts">
-import {ref} from "vue";
-import {onShow} from "@dcloudio/uni-app";
+import {reactive, ref} from "vue";
+import {onReady, onShow} from "@dcloudio/uni-app";
 import dayjs from "dayjs";
 import {useUserStore} from "@/stores";
-import {getMyParkingStatus, type MyParkingStatusVO} from "@/api/parking";
+import {
+  type AppParkingLotQuery,
+  type AppParkingLotVO,
+  getParkingLot,
+  getMyParkingStatus,
+  type MyParkingStatusVO
+} from "@/api/parking";
+
+const userStore = useUserStore()
 
 // 获取屏幕边界到安全区域的距离
 const {safeAreaInsets} = uni.getSystemInfoSync()
 
-const userStore = useUserStore()
+/** hero板块高度 */
+const heroHeight = ref(0)
 
 const lng = ref<number>()
 const lat = ref<number>()
@@ -82,56 +91,112 @@ const feeText = (item: { estimatedFee?: number | null }) => {
   return fee === null || fee === undefined ? '--' : `¥${Number(fee).toFixed(2)}`
 }
 
-const formatDistance = (distance?: number) => {
-  if (!distance) return ''
-  return distance < 1000 ? `${distance}m` : `${(distance / 1000).toFixed(1)}km`
+const formatDistance = (distance?: string | number) => {
+  const n = Number(distance)
+  if (!n) return ''
+  return n < 1000 ? `${n}m` : `${(n / 1000).toFixed(1)}km`
 }
 
 /** 「120m · 科苑路 8 号」 */
-const lotSub = (lot: { distance?: number; address?: string }) =>
+const lotSub = (lot: AppParkingLotVO) =>
   [formatDistance(lot.distance), lot.address].filter(Boolean).join(' · ')
 
-const splitFacilities = (facilities?: string) =>
+/*const splitFacilities = (facilities?: string) =>
   (facilities ?? '')
     .split(',')
     .map((f) => f.trim())
-    .filter(Boolean)
+    .filter(Boolean)*/
 
-const lotList = ref([
-  {
-    id: '1',
-    name: '云帆科技园 A区 停车场',
-    address: '科苑路 8 号',
-    distance: 120,
-    freeSpaces: 42,
-    totalSpaces: 320,
-    hasFree: true,
-    facilities: '充电桩,自助洗车,电梯直达,卫生间',
-  },
-  {
-    id: '2',
-    name: '深南汇购物中心地下车库',
-    address: '深南大道 1002 号',
-    distance: 860,
-    freeSpaces: 0,
-    totalSpaces: 180,
-    hasFree: false,
-    facilities: '充电桩,卫生间,电梯直达',
-  },
-])
+const lotList = ref<AppParkingLotVO[]>([])
+const total = ref(0)
+const loading = ref(false)
+const finished = ref(false)
+
+const query = reactive<AppParkingLotQuery>({
+  pageNo: 1,
+  pageSize: 10,
+})
+
+/** 获取停车场 */
+const fetchLots = async (reset = false) => {
+  if (loading.value) return
+  if (!reset && finished.value) return
+
+  if (reset) {
+    query.pageNo = 1
+    finished.value = false
+  }
+
+  if (lng.value != null && lat.value != null) {
+    query.lng = lng.value
+    query.lat = lat.value
+    query.radiusKm = 5
+  } else {
+    query.lng = undefined
+    query.lat = undefined
+    query.radiusKm = undefined
+  }
+
+  loading.value = true
+  try {
+    const res = await getParkingLot(query)
+    const data = res.data
+    const list = data.list ?? []
+    total.value = Number(data.total ?? 0)
+    lotList.value = reset ? list : lotList.value.concat(list)
+    query.pageNo++;
+    finished.value = list.length < query.pageSize
+  } finally {
+    loading.value = false
+  }
+}
 
 let inited = false
 onShow(async () => {
   await fetchParkingStatus()
   if (!inited) {
     inited = true
-    await locate()
+    await locate().catch(() => {
+    })
   }
+  await fetchLots(true)
+})
+
+/** 刷新状态 */
+const refreshing = ref(false)
+
+/** 刷新状态变更 */
+const onRefreshChange = (e: { value: boolean }) => {
+  refreshing.value = e.value
+}
+
+/** 下拉刷新 */
+const onRefresh = async () => {
+  try {
+    await Promise.all([
+      fetchParkingStatus(),
+      locate().catch(() => {
+      }), // 定位失败不能影响刷新收尾
+      fetchLots(true)
+    ])
+  } finally {
+    refreshing.value = false
+  }
+}
+
+onReady(() => {
+  uni.createSelectorQuery()
+    .select('.home__hero')
+    .boundingClientRect((res) => {
+      const rect = res as UniApp.NodeInfo | null
+      if (rect?.height) heroHeight.value = Math.round(rect.height)
+    })
+    .exec()
 })
 </script>
 
 <template>
-  <view class="home">
+  <view class="home" :style="{'--hero-h': heroHeight + 'px'}">
     <view class="home__hero" :style="{ paddingTop: safeAreaInsets?.top + 'px' }">
       <view class="home__loc" @tap="locate">
         <t-icon name="location" size="16" color="#fff"/>
@@ -145,30 +210,37 @@ onShow(async () => {
       </view>
     </view>
 
-    <view class="home__body">
-      <view v-if="parkingList.length" class="home__cars">
-        <swiper
-          class="home__swiper"
-          :current="currentCar"
-          :circular="parkingList.length > 1"
-          :duration="260"
-          @change="onCarChange"
-        >
-          <swiper-item
-            v-for="(item, index) in parkingList"
-            :key="item.recordId || index"
-            class="home__swiper-item"
+    <t-pull-down-refresh
+      :value="refreshing"
+      :success-duration="600"
+      :refresh-timeout="10000"
+      @change="onRefreshChange"
+      @refresh="onRefresh"
+      @scrolltolower="fetchLots()"
+    >
+      <view class="home__body">
+        <view v-if="parkingList.length" class="home__cars">
+          <swiper
+            class="home__swiper"
+            :current="currentCar"
+            :duration="260"
+            @change="onCarChange"
           >
-            <view class="home__car">
-              <view class="home__car-top">
-                <view class="home__car-top-left">
-                  <text class="home__chip-w">停车中</text>
-                  <text class="home__car-lot">{{ item.lotName }}</text>
+            <swiper-item
+              v-for="(item, index) in parkingList"
+              :key="item.recordId || index"
+              class="home__swiper-item"
+            >
+              <view class="home__car">
+                <view class="home__car-top">
+                  <view class="home__car-top-left">
+                    <text class="home__chip-w">停车中</text>
+                    <text class="home__car-lot">{{ item.lotName }}</text>
+                  </view>
+                  <text v-if="parkingList.length > 1" class="home__car-count">
+                    {{ index + 1 }} / {{ parkingList.length }}
+                  </text>
                 </view>
-                <text v-if="parkingList.length > 1" class="home__car-count">
-                  {{ index + 1 }} / {{ parkingList.length }}
-                </text>
-              </view>
 
               <view class="home__car-mid">
                 <text class="home__plate">{{ item.plateNumber?.substring(0, 2) }}·{{
@@ -189,90 +261,92 @@ onShow(async () => {
           </swiper-item>
         </swiper>
 
-        <view v-if="parkingList.length > 1" class="home__dots">
-          <view
-            v-for="(item, index) in parkingList"
-            :key="index"
-            class="home__dot"
-            :class="{'is-on': index === currentCar}"
-          />
-          <text class="home__dots-tip">共 {{ parkingList.length }} 辆车在场 · 左右滑动切换</text>
-        </view>
-      </view>
-
-      <image
-        v-else
-        class="home__car-empty"
-        src="/static/images/empty-parking-state.png"
-        mode="widthFix"
-      />
-
-      <view class="home__card home__entries-card">
-        <view class="home__entries">
-          <view class="home__entry">
-            <view class="home__entry-icon">
-              <t-icon name="scan"/>
-            </view>
-            <view class="home__entry-label">扫码入场</view>
-          </view>
-          <view class="home__entry">
-            <view class="home__entry-icon">
-              <t-icon name="location"/>
-            </view>
-            <view class="home__entry-label">找车位</view>
-          </view>
-          <view class="home__entry">
-            <view class="home__entry-icon">
-              <t-icon name="vehicle"/>
-            </view>
-            <view class="home__entry-label">我的车牌</view>
-          </view>
-          <view class="home__entry">
-            <view class="home__entry-icon">
-              <t-icon name="coupon"/>
-            </view>
-            <view class="home__entry-label">领券中心</view>
+          <view v-if="parkingList.length > 1" class="home__dots">
+            <view
+              v-for="(item, index) in parkingList"
+              :key="index"
+              class="home__dot"
+              :class="{'is-on': index === currentCar}"
+            />
+            <text class="home__dots-tip">共 {{ parkingList.length }} 辆车在场 · 左右滑动切换</text>
           </view>
         </view>
-      </view>
 
-      <view class="home__section">
-        <view class="home__section-title">附近停车场</view>
-        <view class="home__section-more">
-          <text>按距离</text>
-          <t-icon name="chevron-right"/>
+        <image
+          v-else
+          class="home__car-empty"
+          src="/static/images/empty-parking-state.png"
+          mode="widthFix"
+        />
+
+        <view class="home__card home__entries-card">
+          <view class="home__entries">
+            <view class="home__entry">
+              <view class="home__entry-icon">
+                <t-icon name="scan"/>
+              </view>
+              <view class="home__entry-label">扫码入场</view>
+            </view>
+            <view class="home__entry">
+              <view class="home__entry-icon">
+                <t-icon name="location"/>
+              </view>
+              <view class="home__entry-label">找车位</view>
+            </view>
+            <view class="home__entry">
+              <view class="home__entry-icon">
+                <t-icon name="vehicle"/>
+              </view>
+              <view class="home__entry-label">我的车牌</view>
+            </view>
+            <view class="home__entry">
+              <view class="home__entry-icon">
+                <t-icon name="coupon"/>
+              </view>
+              <view class="home__entry-label">领券中心</view>
+            </view>
+          </view>
         </view>
-      </view>
 
-      <view class="home__list">
-        <view v-for="lot in lotList" :key="lot.id" class="home__card home__lot">
-          <view class="home__lot-info">
-            <text class="home__lot-name">{{ lot.name }}</text>
-            <text class="home__lot-sub">{{ lotSub(lot) }}</text>
-            <view v-if="splitFacilities(lot.facilities).length" class="home__lot-facilities">
-              <text
-                v-for="facility in splitFacilities(lot.facilities)"
-                :key="facility"
-                class="home__lot-chip"
-              >{{ facility }}
+        <view class="home__section">
+          <view class="home__section-title">附近停车场</view>
+          <view class="home__section-more">
+            <text>按距离</text>
+            <t-icon name="chevron-right"/>
+          </view>
+        </view>
+
+        <view v-if="lotList.length" class="home__list">
+          <view v-for="lot in lotList" :key="lot.id" class="home__card home__lot">
+            <view class="home__lot-info">
+              <text class="home__lot-name">{{ lot.name }}</text>
+              <text class="home__lot-sub">{{ lotSub(lot) }}</text>
+<!--              <view v-if="splitFacilities(lot.facilities).length" class="home__lot-facilities">
+                <text
+                  v-for="facility in splitFacilities(lot.facilities)"
+                  :key="facility"
+                  class="home__lot-chip"
+                >{{ facility }}
+                </text>
+              </view>-->
+            </view>
+            <view class="home__lot-spaces">
+              <text class="home__lot-num" :class="{ 'is-full': !lot.hasFree }">
+                {{ lot.hasFree ? lot.freeSpaces : 0 }}
+              </text>
+              <text class="home__lot-num-tip">
+                {{ lot.hasFree ? `空闲/${lot.totalSpaces}` : `已满/${lot.totalSpaces}` }}
               </text>
             </view>
           </view>
-          <view class="home__lot-spaces">
-            <text class="home__lot-num" :class="{ 'is-full': !lot.hasFree }">
-              {{ lot.hasFree ? lot.freeSpaces : 0 }}
-            </text>
-            <text class="home__lot-num-tip">
-              {{ lot.hasFree ? `空闲/${lot.totalSpaces}` : `已满/${lot.totalSpaces}` }}
-            </text>
-          </view>
+        </view>
+
+        <view v-if="loading" class="home__tip">加载中…</view>
+        <view v-else-if="finished" class="home__tip">
+          {{ lotList.length ? '没有更多了' : '附近暂无停车场' }}
         </view>
       </view>
-
-      <view class="home__tip">加载中…</view>
-      <view class="home__tip">登录后查看附近停车场</view>
-      <view class="home__tip">没有更多了</view>
-    </view>
+    </t-pull-down-refresh>
   </view>
 </template>
 
@@ -330,6 +404,8 @@ onShow(async () => {
   flex-direction: column;
   gap: 20rpx;
   padding: 27rpx 30rpx 30rpx;
+  min-height: calc(100vh - var(--hero-h));
+  box-sizing: border-box;
 }
 
 .home__cars {
@@ -354,6 +430,10 @@ onShow(async () => {
 .home__swiper-item {
   box-sizing: border-box;
   padding: 0 10rpx;
+  /** 开启GPU加速 */
+  transform: translateZ(0);
+  /* 可选，告诉浏览器这个元素会频繁变换 */
+  will-change: transform;
 }
 
 .home__car {
