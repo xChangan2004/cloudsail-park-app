@@ -42,12 +42,17 @@ const query = reactive<AppOrderQuery>({
 
 /** 获取订单列表 */
 const fetchOrders = async (reset = false) => {
-  if (!reset && (loading.value || finished.value)) return
-  loading.value = true
+  if (loading.value) return
+  if (!reset && finished.value) return
 
-  query.pageNo = reset ? 1 : query.pageNo
+  if (reset) {
+    query.pageNo = 1
+    finished.value = false
+  }
+
   query.status = TAB_STATUS[activeTab.value]
 
+  loading.value = true
   try {
     const res = await getMyOrders(query)
     const data = res.data
