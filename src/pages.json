@@ -59,15 +59,21 @@
     "list": [
       {
         "pagePath": "pages/index/index",
-        "text": "首页"
+        "text": "首页",
+        "iconPath": "static/tabbar/首页-未选中.png",
+        "selectedIconPath": "static/tabbar/首页-选中.png"
       },
       {
         "pagePath": "pages/order/index",
-        "text": "订单"
+        "text": "订单",
+        "iconPath": "static/tabbar/订单-未选中.png",
+        "selectedIconPath": "static/tabbar/订单-选中.png"
       },
       {
         "pagePath": "pages/mine/index",
-        "text": "我的"
+        "text": "我的",
+        "iconPath": "static/tabbar/我的-未选中.png",
+        "selectedIconPath": "static/tabbar/我的-选中.png"
       }
     ]
   }
