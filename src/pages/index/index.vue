@@ -31,7 +31,7 @@ const locate = () => {
   locationText.value = '定位中...'
   return new Promise((resolve, reject) => {
     uni.getLocation({
-      type: 'gcj02',
+      type: 'wgs84',
       success: (res) => {
         lng.value = res.longitude
         lat.value = res.latitude
