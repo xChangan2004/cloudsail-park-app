@@ -99,9 +99,12 @@ const feeText = (item: { estimatedFee?: number | null }) => {
   return fee === null || fee === undefined ? '--' : `¥${Number(fee).toFixed(2)}`
 }
 
-const formatDistance = (distance?: string | number) => {
+/** 距离。null/undefined/空串 ⇒ ''（后端无定位返回 null）；<50m 视为「附近」——低于定位误差量级，米数不可信 */
+const formatDistance = (distance?: string | number | null) => {
+  if (distance === null || distance === undefined || distance === '') return ''
   const n = Number(distance)
-  if (!n) return ''
+  if (Number.isNaN(n)) return ''
+  if (n < 50) return '附近'
   return n < 1000 ? `${n}m` : `${(n / 1000).toFixed(1)}km`
 }
 
