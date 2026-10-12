@@ -55,6 +55,7 @@
     "@dcloudio/uni-quickapp-webview": "3.0.0-5020420260813003",
     "@tdesign/uniapp": "^0.10.3",
     "dayjs": "^1.11.23",
+    "gcoord": "^1.0.7",
     "lodash-es": "^4.18.1",
     "luch-request": "^4.0.0",
     "pinia": "3.0.4",

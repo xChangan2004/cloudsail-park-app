@@ -10,6 +10,8 @@ import {
   getMyParkingStatus,
   type MyParkingStatusVO
 } from "@/api/parking";
+import {wgs84ToGcj02} from "@/utils/coord";
+import {regeo} from "@/api/amap";
 
 const userStore = useUserStore()
 
@@ -33,10 +35,16 @@ const locate = () => {
     uni.getLocation({
       type: 'wgs84',
       success: (res) => {
-        lng.value = res.longitude
-        lat.value = res.latitude
-        locationText.value = '当前位置'
+        const {longitude, latitude} = wgs84ToGcj02(res.longitude, res.latitude)
+        lng.value = longitude
+        lat.value = latitude
         resolve(res)
+        regeo(longitude, latitude)
+          .then((text) => locationText.value = text)
+          .catch((err) => {
+            console.warn('[regeo]', err)
+            locationText.value = '当前位置'   // 逆地理失败不影响定位本身
+          })
       },
       fail: (err) => {
         // 常见原因：用户拒绝授权 / 小程序未申请「用户地理位置」接口权限
@@ -242,24 +250,24 @@ onReady(() => {
                   </text>
                 </view>
 
-              <view class="home__car-mid">
-                <text class="home__plate">{{ item.plateNumber?.substring(0, 2) }}·{{
-                    item.plateNumber?.substring(2)
-                  }}
-                </text>
-                <view class="home__car-fee">
-                  <text class="home__car-fee-num">{{ feeText(item) }}</text>
-                  <text class="home__car-fee-tip">预估</text>
+                <view class="home__car-mid">
+                  <text class="home__plate">{{ item.plateNumber?.substring(0, 2) }}·{{
+                      item.plateNumber?.substring(2)
+                    }}
+                  </text>
+                  <view class="home__car-fee">
+                    <text class="home__car-fee-num">{{ feeText(item) }}</text>
+                    <text class="home__car-fee-tip">预估</text>
+                  </view>
+                </view>
+
+                <view class="home__car-bot">
+                  <text class="home__car-time">{{ parkedText(item) }}</text>
+                  <text class="home__car-more">查看详情</text>
                 </view>
               </view>
-
-              <view class="home__car-bot">
-                <text class="home__car-time">{{ parkedText(item) }}</text>
-                <text class="home__car-more">查看详情</text>
-              </view>
-            </view>
-          </swiper-item>
-        </swiper>
+            </swiper-item>
+          </swiper>
 
           <view v-if="parkingList.length > 1" class="home__dots">
             <view
@@ -321,14 +329,14 @@ onReady(() => {
             <view class="home__lot-info">
               <text class="home__lot-name">{{ lot.name }}</text>
               <text class="home__lot-sub">{{ lotSub(lot) }}</text>
-<!--              <view v-if="splitFacilities(lot.facilities).length" class="home__lot-facilities">
-                <text
-                  v-for="facility in splitFacilities(lot.facilities)"
-                  :key="facility"
-                  class="home__lot-chip"
-                >{{ facility }}
-                </text>
-              </view>-->
+              <!--              <view v-if="splitFacilities(lot.facilities).length" class="home__lot-facilities">
+                              <text
+                                v-for="facility in splitFacilities(lot.facilities)"
+                                :key="facility"
+                                class="home__lot-chip"
+                              >{{ facility }}
+                              </text>
+                            </view>-->
             </view>
             <view class="home__lot-spaces">
               <text class="home__lot-num" :class="{ 'is-full': !lot.hasFree }">
