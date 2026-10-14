@@ -293,28 +293,11 @@ const goSearch = () => {
         </view>
 
         <view v-if="lotList.length" class="home__list">
-          <view v-for="lot in lotList" :key="lot.id" class="home__card home__lot">
-            <view class="home__lot-info">
-              <text class="home__lot-name">{{ lot.name }}</text>
-              <text class="home__lot-sub">{{ lotSub(lot) }}</text>
-              <!--              <view v-if="splitFacilities(lot.facilities).length" class="home__lot-facilities">
-                              <text
-                                v-for="facility in splitFacilities(lot.facilities)"
-                                :key="facility"
-                                class="home__lot-chip"
-                              >{{ facility }}
-                              </text>
-                            </view>-->
-            </view>
-            <view class="home__lot-spaces">
-              <text class="home__lot-num" :class="{ 'is-full': !lot.hasFree }">
-                {{ lot.hasFree ? lot.freeSpaces : 0 }}
-              </text>
-              <text class="home__lot-num-tip">
-                {{ lot.hasFree ? `空闲/${lot.totalSpaces}` : `已满/${lot.totalSpaces}` }}
-              </text>
-            </view>
-          </view>
+          <lot-card
+            v-for="lot in lotList"
+            :key="lot.id"
+            :lot="lot"
+          />
         </view>
 
         <view v-if="loading" class="home__tip">加载中…</view>
