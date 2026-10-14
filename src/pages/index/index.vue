@@ -2,7 +2,7 @@
 import {reactive, ref} from "vue";
 import {onReady, onShow} from "@dcloudio/uni-app";
 import dayjs from "dayjs";
-import {useUserStore} from "@/stores";
+import {useUserStore, useLocationStore} from "@/stores";
 import {
   type AppParkingLotQuery,
   type AppParkingLotVO,
@@ -10,53 +10,15 @@ import {
   getMyParkingStatus,
   type MyParkingStatusVO
 } from "@/api/parking";
-import {wgs84ToGcj02} from "@/utils/coord";
-import {regeo} from "@/api/amap";
 
 const userStore = useUserStore()
+const loc = useLocationStore()
 
 // 获取屏幕边界到安全区域的距离
 const {safeAreaInsets} = uni.getSystemInfoSync()
 
 /** hero板块高度 */
 const heroHeight = ref(0)
-
-const lng = ref<number>()
-const lat = ref<number>()
-const locating = ref(false)
-const locationText = ref('点击定位')
-
-/** 定位到当前位置 */
-const locate = () => {
-  if (locating.value) return Promise.resolve()
-  locating.value = true
-  locationText.value = '定位中...'
-  return new Promise((resolve, reject) => {
-    uni.getLocation({
-      type: 'wgs84',
-      success: (res) => {
-        const {longitude, latitude} = wgs84ToGcj02(res.longitude, res.latitude)
-        lng.value = longitude
-        lat.value = latitude
-        resolve(res)
-        regeo(longitude, latitude)
-          .then((text) => locationText.value = text)
-          .catch((err) => {
-            console.warn('[regeo]', err)
-            locationText.value = '当前位置'   // 逆地理失败不影响定位本身
-          })
-      },
-      fail: (err) => {
-        // 常见原因：用户拒绝授权 / 小程序未申请「用户地理位置」接口权限
-        locationText.value = '定位失败，点击重试'
-        reject(err)
-      },
-      complete: () => {
-        locating.value = false
-      }
-    })
-  })
-}
 
 /** 在场车辆列表 */
 const parkingList = ref<MyParkingStatusVO[]>([])
@@ -138,9 +100,9 @@ const fetchLots = async (reset = false) => {
     finished.value = false
   }
 
-  if (lng.value != null && lat.value != null) {
-    query.lng = lng.value
-    query.lat = lat.value
+  if (loc.lng != null && loc.lat != null) {
+    query.lng = loc.lng
+    query.lat = loc.lat
     query.radiusKm = 5
   } else {
     query.lng = undefined
@@ -167,8 +129,7 @@ onShow(async () => {
   await fetchParkingStatus()
   if (!inited) {
     inited = true
-    await locate().catch(() => {
-    })
+    await loc.locate()
   }
   await fetchLots(true)
 })
@@ -186,10 +147,9 @@ const onRefresh = async () => {
   try {
     await Promise.all([
       fetchParkingStatus(),
-      locate().catch(() => {
-      }), // 定位失败不能影响刷新收尾
-      fetchLots(true)
+      loc.locate(true)
     ])
+    await fetchLots(true)
   } finally {
     refreshing.value = false
   }
@@ -204,18 +164,23 @@ onReady(() => {
     })
     .exec()
 })
+
+/** 跳转搜索页 */
+const goSearch = () => {
+  uni.navigateTo({url: '/pages/lot/list'})
+}
 </script>
 
 <template>
   <view class="home" :style="{'--hero-h': heroHeight + 'px'}">
     <view class="home__hero" :style="{ paddingTop: safeAreaInsets?.top + 'px' }">
-      <view class="home__loc" @tap="locate">
+      <view class="home__loc" @tap="loc.locate(true)">
         <t-icon name="location" size="16" color="#fff"/>
-        <text class="home__loc-text">{{ locationText }}</text>
+        <text class="home__loc-text">{{ loc.addressText }}</text>
         <t-icon name="chevron-down" size="15" color="#fff"/>
       </view>
 
-      <view class="home__search">
+      <view class="home__search" @tap="goSearch">
         <t-icon name="ai-search" size="15" color="#909399"/>
         <text class="home__search-ph">搜索停车场</text>
       </view>
