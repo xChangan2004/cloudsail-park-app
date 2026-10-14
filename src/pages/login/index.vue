@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {ref, reactive, onUnmounted} from "vue"
 import {login, sendCode} from "@/api/auth";
-import {useUserStore} from "@/stores";
+import {useBadgeStore, useUserStore} from "@/stores";
 
 // 获取屏幕边界到安全区域的距离
 const {safeAreaInsets} = uni.getSystemInfoSync()
@@ -55,6 +55,7 @@ const onLogin = async () => {
   try {
     const res = await login({phone: form.phone, code: form.code})
     userStore.setLoginInfo(res.data)
+    useBadgeStore().refreshUnpaid()
     uni.reLaunch({url: '/pages/index/index'})
   } finally {
     logging.value = false

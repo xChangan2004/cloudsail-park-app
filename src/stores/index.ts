@@ -14,3 +14,4 @@ export default pinia
 export * from './modules/user'
 export * from './modules/location'
 export * from './modules/searchHistory'
+export * from './modules/badge'

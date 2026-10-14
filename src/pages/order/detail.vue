@@ -3,6 +3,7 @@ import {computed, ref} from 'vue'
 import {type AppOrderDetailVO, getMyOrderDetail, type OrderStatus} from "@/api/order";
 import dayjs from "dayjs";
 import {onLoad, onShow} from "@dcloudio/uni-app";
+import {useBadgeStore} from "@/stores";
 
 /** 订单状态映射 */
 const STATUS_MAP: Record<OrderStatus, { label: string; class: string }> = {
@@ -32,6 +33,7 @@ const fetchOrderDetail = async () => {
   try {
     const res = await getMyOrderDetail(orderId.value)
     detail.value = res.data
+    useBadgeStore().refreshUnpaid()
   } catch {
     // 不做处理
   } finally {

@@ -49,3 +49,15 @@ export interface AppOrderDetailVO {
 export const getMyOrderDetail = (id: string) => {
   return http.get<AppOrderDetailVO>(`/orders/${id}`)
 }
+
+export interface AppUnpaidCountVO {
+  /** 待支付订单数（角标用） */
+  count: number
+  /** 待支付总金额（元） */
+  totalAmount: number
+}
+
+/** 我的待支付订单统计 */
+export const getMyUnpaidCount = () => {
+  return http.get<AppUnpaidCountVO>('/orders/unpaid-count')
+}

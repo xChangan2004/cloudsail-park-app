@@ -34,13 +34,24 @@ const handleUnauthorized = () => {
   }, 800)
 }
 
+/** 静默接口 */
+const SILENT_APIS = ['/orders/unpaid-count']
+
+const isSilent = (config: unknown) => {
+  const url = String((config as { url?: string })?.url ?? '')
+  return SILENT_APIS.some(api => url === api)
+}
+
 /** 响应拦截器 */
 http.interceptors.response.use((response) => {
   const res = response.data as Result
+  const silent = isSilent(response.config)
   if (res.code !== 200) {
     if (res.code === 401) {
-      handleUnauthorized()
-    } else {
+      // 后台请求的 401 只清状态，不弹提示、不踢登录页
+      if (silent) useUserStore().resetLoginState()
+      else handleUnauthorized()
+    } else if (!silent) {
       // 错误提示
       uni.showToast({
         title: res.msg || '服务器开小差啦,请稍后再试~',
@@ -53,7 +64,9 @@ http.interceptors.response.use((response) => {
   response.data = res.data
   return response
 }, (error) => {
-  uni.showToast({title: '网络异常，请检查网络连接', icon: 'none'})
+  if (!isSilent((error as { config?: unknown })?.config)) {
+    uni.showToast({title: '网络异常，请检查网络连接', icon: 'none'})
+  }
   throw error
 })
 
