@@ -61,25 +61,6 @@ const feeText = (item: { estimatedFee?: number | null }) => {
   return fee === null || fee === undefined ? '--' : `¥${Number(fee).toFixed(2)}`
 }
 
-/** 距离。null/undefined/空串 ⇒ ''（后端无定位返回 null）；<50m 视为「附近」——低于定位误差量级，米数不可信 */
-const formatDistance = (distance?: string | number | null) => {
-  if (distance === null || distance === undefined || distance === '') return ''
-  const n = Number(distance)
-  if (Number.isNaN(n)) return ''
-  if (n < 50) return '附近'
-  return n < 1000 ? `${n}m` : `${(n / 1000).toFixed(1)}km`
-}
-
-/** 「120m · 科苑路 8 号」 */
-const lotSub = (lot: AppParkingLotVO) =>
-  [formatDistance(lot.distance), lot.address].filter(Boolean).join(' · ')
-
-/*const splitFacilities = (facilities?: string) =>
-  (facilities ?? '')
-    .split(',')
-    .map((f) => f.trim())
-    .filter(Boolean)*/
-
 const lotList = ref<AppParkingLotVO[]>([])
 const total = ref(0)
 const loading = ref(false)
@@ -90,25 +71,30 @@ const query = reactive<AppParkingLotQuery>({
   pageSize: 10,
 })
 
+const needLocation = ref(false)
+
 /** 获取停车场 */
 const fetchLots = async (reset = false) => {
   if (loading.value) return
   if (!reset && finished.value) return
+
+  if (!loc.hasCoords) {
+    needLocation.value = true
+    lotList.value = []
+    total.value = 0
+    finished.value = true
+    return
+  }
+  needLocation.value = false
 
   if (reset) {
     query.pageNo = 1
     finished.value = false
   }
 
-  if (loc.lng != null && loc.lat != null) {
-    query.lng = loc.lng
-    query.lat = loc.lat
-    query.radiusKm = 5
-  } else {
-    query.lng = undefined
-    query.lat = undefined
-    query.radiusKm = undefined
-  }
+  query.lng = loc.lng
+  query.lat = loc.lat
+  query.radiusKm = 5
 
   loading.value = true
   try {
@@ -119,15 +105,31 @@ const fetchLots = async (reset = false) => {
     lotList.value = reset ? list : lotList.value.concat(list)
     query.pageNo++;
     finished.value = list.length < query.pageSize
+  } catch {
+    if (reset) {
+      lotList.value = []
+      total.value = 0
+    }
+    finished.value = true
   } finally {
     loading.value = false
   }
 }
 
+/** 重新定位并拉取数据 */
+const onRetryLocate = async () => {
+  const ok = await loc.locate(true)
+  if (!ok) {
+    uni.showToast({title: '定位失败，请检查系统定位权限', icon: 'none'})
+    return
+  }
+  await fetchLots(true)
+}
+
 let inited = false
 onShow(async () => {
   await fetchParkingStatus()
-  if (!inited) {
+  if (!inited || loc.isStale()) {
     inited = true
     await loc.locate()
   }
@@ -174,7 +176,7 @@ const goSearch = () => {
 <template>
   <view class="home" :style="{'--hero-h': heroHeight + 'px'}">
     <view class="home__hero" :style="{ paddingTop: safeAreaInsets?.top + 'px' }">
-      <view class="home__loc" @tap="loc.locate(true)">
+      <view class="home__loc" @tap="onRetryLocate">
         <t-icon name="location" size="16" color="#fff"/>
         <text class="home__loc-text">{{ loc.addressText }}</text>
         <t-icon name="chevron-down" size="15" color="#fff"/>
@@ -301,6 +303,16 @@ const goSearch = () => {
         </view>
 
         <view v-if="loading" class="home__tip">加载中…</view>
+        <view v-else-if="needLocation" class="home__empty">
+          <view class="home__empty-icon">
+            <t-icon name="location" size="34" color="#a8c7ee"/>
+          </view>
+          <text class="home__empty-title">定位还没开启</text>
+          <text class="home__empty-tip">开启定位后才能看到附近的车场</text>
+          <view class="home__empty-btn" hover-class="home__empty-btn--hover" @tap="onRetryLocate">
+            重新定位
+          </view>
+        </view>
         <view v-else-if="finished" class="home__tip">
           {{ lotList.length ? '没有更多了' : '附近暂无停车场' }}
         </view>
@@ -669,5 +681,55 @@ const goSearch = () => {
   text-align: center;
   font-size: 26rpx;
   color: #a8abb2;
+}
+
+.home__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60rpx 40rpx;
+}
+
+.home__empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 159rpx;
+  height: 159rpx;
+  border-radius: 50%;
+  background: #eef4fd;
+}
+
+.home__empty-title {
+  margin-top: 32rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #303133;
+}
+
+.home__empty-tip {
+  margin-top: 15rpx;
+  font-size: 26rpx;
+  color: #909399;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.home__empty-btn {
+  margin-top: 40rpx;
+  min-width: 260rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  padding: 0 40rpx;
+  box-sizing: border-box;
+  text-align: center;
+  border-radius: 40rpx;
+  font-size: 29rpx;
+  color: #fff;
+  background: #409eff;
+}
+
+.home__empty-btn--hover {
+  background: #2b7cd3;
 }
 </style>

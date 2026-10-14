@@ -76,6 +76,15 @@ const fetchLots = async (reset = false) => {
   if (loading.value) return
   if (!reset && finished.value) return
 
+  if (!loc.hasCoords) {
+    needLocation.value = true
+    lots.value = []
+    total.value = 0
+    finished.value = true
+    return
+  }
+  needLocation.value = false
+
   if (reset) {
     query.pageNo = 1
     finished.value = false
@@ -97,7 +106,6 @@ const fetchLots = async (reset = false) => {
     query.pageNo++;
     finished.value = list.length < query.pageSize
   } catch {
-    uni.showToast({title: '加载失败，请稍后重试', icon: 'none'})
     if (reset) {
       lots.value = []
       total.value = 0
@@ -129,6 +137,16 @@ const onClear = () => {
   finished.value = false
 }
 
+/** 重新定位并拉取数据 */
+const onRetryLocate = async () => {
+  const ok = await loc.locate(true)
+  if (!ok) {
+    uni.showToast({title: '定位失败，请检查系统定位权限', icon: 'none'})
+    return
+  }
+  await fetchLots(true)
+}
+
 /** 退回上一页；被直接打开时回首页 tab */
 const onCancel = () => {
   if (getCurrentPages().length > 1) uni.navigateBack()
@@ -142,10 +160,16 @@ const onPickHistory = (h: string) => {
 }
 
 /** 页面状态 */
-type PageState = 'input' | 'result' | 'empty'
+type PageState = 'input' | 'result' | 'empty' | 'needLocation'
+
+/** 定位不可用 */
+const needLocation = ref(false)
+
 /** 当前状态 */
 const state = computed<PageState>(() => {
   if (!submittedKeyword.value) return 'input'
+  // 没定位就没法查
+  if (needLocation.value) return 'needLocation'
   // 首次加载中还没数据时留在结果页面，别闪一下「没找到」
   if (loading.value && !lots.value.length) return 'result'
   return lots.value.length ? 'result' : 'empty'
@@ -241,6 +265,18 @@ onReachBottom(() => {
           上拉加载更多 · 已显示 {{ lots.length }} / {{ total }}
         </view>
         <view v-else-if="finished" class="lot__tip">没有更多数据</view>
+      </template>
+      <template v-else-if="state === 'needLocation'">
+        <view class="lot__empty">
+          <view class="lot__empty-icon">
+            <t-icon name="location" size="34" color="#a8c7ee"/>
+          </view>
+          <text class="lot__empty-title">定位还没开启</text>
+          <text class="lot__empty-tip">开启定位后才能搜索附近的车场</text>
+          <view class="lot__empty-btn" hover-class="lot__empty-btn--hover" @tap="onRetryLocate">
+            重新定位
+          </view>
+        </view>
       </template>
       <template v-else>
         <view class="lot__empty">
@@ -481,5 +517,23 @@ onReachBottom(() => {
   color: #909399;
   line-height: 1.65;
   text-align: center;
+}
+
+.lot__empty-btn {
+  margin-top: 48rpx;
+  min-width: 260rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  padding: 0 40rpx;
+  box-sizing: border-box;
+  text-align: center;
+  border-radius: 40rpx;
+  font-size: 29rpx;
+  color: #fff;
+  background: #409eff;
+}
+
+.lot__empty-btn--hover {
+  background: #2b7cd3;
 }
 </style>
