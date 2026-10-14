@@ -15,6 +15,12 @@
 			}
 		},
 		{
+			"path": "pages/lot/list",
+			"style": {
+				"enablePullDownRefresh": false
+			}
+		},
+		{
 			"path": "pages/order/index"
 		},
 		{

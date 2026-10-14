@@ -16,11 +16,15 @@ export const getMyParkingStatus = () => {
   return http.get<MyParkingStatusVO[]>('/parking/status')
 }
 
+export type sortType = 'smart' | 'distance' | 'price'
+
 export interface AppParkingLotQuery extends PageParams {
   name?: string
   lng?: number
   lat?: number
   radiusKm?: number
+  onlyFree?: boolean
+  sortType?: sortType
 }
 
 export interface AppParkingLotVO {
