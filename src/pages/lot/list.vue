@@ -1,84 +1,138 @@
 <script setup lang="ts">
 import {computed, reactive, ref} from "vue"
 import {useNavbarSafe} from "@/hooks/useNavbarSafe";
+import {useLocationStore, useSearchHistoryStore} from '@/stores'
+import {onLoad, onReachBottom} from '@dcloudio/uni-app'
+import {type AppParkingLotQuery, type AppParkingLotVO, getParkingLot, type sortType} from "@/api/parking";
+
+const loc = useLocationStore()
+const historyStore = useSearchHistoryStore()
 
 const {heroPaddingTop} = useNavbarSafe()
 
-/** 停车场结果数据 */
-const resultLots = ref(['a', 'b'])
-
-/** 输入框内容 */
-const keyword = ref('')
-
-/** 已提交的词 */
-const submittedKeyword = ref('')
-
 /** 搜索范围 */
-const radiusOptions = [
+const radiusOptions: { label: string; value: number }[] = [
   {value: 1, label: '1km'},
   {value: 3, label: '3km'},
   {value: 5, label: '5km'},
   {value: 10, label: '10km'},
 ]
 /** 当前选择的搜索范围 */
-const radius = ref(1)
+const radius = ref(5)
 
 const onRadiusChange = (e: { value: number }) => {
   const next = e.value
   if (next === radius.value) return
   radius.value = next
+  fetchLots(true)
 }
 
 /** 排序范围 */
-const sortOptions = [
+const sortOptions: { label: string; value: sortType }[] = [
   {label: '智能排序', value: 'smart'},
   {label: '距离', value: 'distance'},
   {label: '价格', value: 'price'},
 ]
+
 /** 当前选择的排序范围 */
-const sort = ref('smart')
+const sort = ref<sortType>('smart')
+
+const onSortChange = (v: sortType) => {
+  if (v === sort.value) return
+  if (v === 'price') {
+    uni.showToast({title: '价格排序暂未开放', icon: 'none'})
+    return
+  }
+  sort.value = v
+  fetchLots(true)
+}
 
 /** 只看有空位 */
 const onlyFree = ref(false)
 
-/** 查询参数 */
-const query = reactive({
+const onOnlyFreeChange = () => {
+  onlyFree.value = !onlyFree.value
+  fetchLots(true)
+}
+
+/** 输入框内容 */
+const keyword = ref('')
+/** 已提交的词 */
+const submittedKeyword = ref('')
+
+const lots = ref<AppParkingLotVO[]>([])
+const total = ref(0)
+const loading = ref(false)
+const finished = ref(false)
+
+/** 请求参数 */
+const query = reactive<AppParkingLotQuery>({
   pageNo: 1,
   pageSize: 10,
-  name: submittedKeyword.value || undefined,
-  hasFree: onlyFree.value || undefined,
-  sortType: sort.value
 })
+
+/** 获取停车场 */
+const fetchLots = async (reset = false) => {
+  if (loading.value) return
+  if (!reset && finished.value) return
+
+  if (reset) {
+    query.pageNo = 1
+    finished.value = false
+  }
+
+  query.name = submittedKeyword.value || undefined
+  query.lng = loc.lng
+  query.lat = loc.lat
+  query.radiusKm = radius.value
+  query.onlyFree = onlyFree.value || undefined
+  query.sortType = sort.value === 'smart' ? undefined : sort.value
+
+  loading.value = true
+  try {
+    const res = await getParkingLot(query)
+    const list = res.data?.list ?? []
+    total.value = Number(res.data?.total ?? 0)
+    lots.value = reset ? list : lots.value.concat(list)
+    query.pageNo++;
+    finished.value = list.length < query.pageSize
+  } catch {
+    uni.showToast({title: '加载失败，请稍后重试', icon: 'none'})
+    if (reset) {
+      lots.value = []
+      total.value = 0
+    }
+    finished.value = true
+  } finally {
+    loading.value = false
+  }
+}
 
 /** 搜索 */
 const onSearch = () => {
   const kw = keyword.value.trim()
   if (!kw) return
   submittedKeyword.value = kw
-  history.value = [kw, ...history.value.filter(h => h !== kw)].slice(0, HISTORY_MAX)
+  historyStore.push(kw)
   /** 收起键盘 */
   uni.hideKeyboard()
+  fetchLots(true)
 }
 
 /** 清除输入框 */
 const onClear = () => {
   keyword.value = ''
   submittedKeyword.value = ''
+  lots.value = []
+  total.value = 0
+  query.pageNo = 1
+  finished.value = false
 }
 
 /** 退回上一页；被直接打开时回首页 tab */
 const onCancel = () => {
   if (getCurrentPages().length > 1) uni.navigateBack()
   else uni.switchTab({url: "/pages/index/index"})
-}
-
-/** 搜索历史 */
-const history = ref(["云帆科技园", "深南汇", "海岸城", "万象天地", "深圳湾公园"])
-const HISTORY_MAX = 10
-
-/** 清除历史记录 */
-const clearHistory = () => {
-  history.value = []
 }
 
 /** 选择记录内容 */
@@ -92,7 +146,18 @@ type PageState = 'input' | 'result' | 'empty'
 /** 当前状态 */
 const state = computed<PageState>(() => {
   if (!submittedKeyword.value) return 'input'
-  return resultLots.value.length ? 'result' : 'empty'
+  // 首次加载中还没数据时留在结果页面，别闪一下「没找到」
+  if (loading.value && !lots.value.length) return 'result'
+  return lots.value.length ? 'result' : 'empty'
+})
+
+onLoad(async () => {
+  await loc.locate()
+})
+
+onReachBottom(() => {
+  if (state.value !== 'result') return
+  fetchLots()
 })
 </script>
 
@@ -121,14 +186,14 @@ const state = computed<PageState>(() => {
 
     <view class="lot__body">
       <template v-if="state === 'input'">
-        <template v-if="history.length">
+        <template v-if="historyStore.keywords.length">
           <view class="lot__head">
             <text class="lot__head-t">搜索历史</text>
-            <text class="lot__head-s" @tap="clearHistory">清空</text>
+            <text class="lot__head-s" @tap="historyStore.clear()">清空</text>
           </view>
           <view class="lot__chips">
             <text
-              v-for="h in history"
+              v-for="h in historyStore.keywords"
               :key="h"
               class="lot__chip"
               @tap="onPickHistory(h)"
@@ -154,40 +219,28 @@ const state = computed<PageState>(() => {
             :key="s.value"
             class="lot__sort-item"
             :class="{'is-on': s.value === sort}"
-            @tap="sort = s.value"
+            @tap="onSortChange(s.value)"
           >
             {{ s.label }}
             <t-icon name="chevron-down" size="14" :color="s.value === sort ? '#2b7cd3' : '#909399'"/>
           </view>
-          <view class="lot__filter" :class="{'is-on': onlyFree}" @tap="onlyFree = !onlyFree">
+          <view class="lot__filter" :class="{'is-on': onlyFree}" @tap="onOnlyFreeChange">
             <t-icon name="check" size="12" :color="onlyFree ? '#2b7cd3' : '#c0c4cc'"/>
             <text>只看有空位</text>
           </view>
         </view>
-        <text class="lot__count">
-          「{{ submittedKeyword }}」附近 {{ radiusOptions[radius].label }} 内找到 {{ resultLots.length }} 个车场
-        </text>
         <view class="lot__list">
-          <view v-for="lot in resultLots" class="lot__card">
-            <view class="lot__card-main">
-              <view class="lot__card-name-row">
-                <text class="lot__card-name">深南汇购物中心地下车库</text>
-                <text class="lot__chip-tag">标准</text>
-              </view>
-              <text class="lot__card-fee">¥2–5/时 · 每 24 小时封顶 ¥30</text>
-              <view class="lot__card-fac">
-                <text>充电桩</text>
-                <text>电梯直达</text>
-                <text>卫生间</text>
-              </view>
-            </view>
-            <view class="lot__card-space">
-              <text class="lot__space-num">6</text>
-              <text class="lot__space-tip">空闲/180</text>
-              <view class="lot__space-dist">300m</view>
-            </view>
-          </view>
+          <lot-card
+            v-for="lot in lots"
+            :key="lot.id"
+            :lot="lot"
+          />
         </view>
+        <view v-if="loading" class="lot__tip">加载中…</view>
+        <view v-else-if="!finished && lots.length" class="lot__tip">
+          上拉加载更多 · 已显示 {{ lots.length }} / {{ total }}
+        </view>
+        <view v-else-if="finished" class="lot__tip">没有更多数据</view>
       </template>
       <template v-else>
         <view class="lot__empty">
@@ -195,8 +248,7 @@ const state = computed<PageState>(() => {
             <t-icon name="search" size="34" color="#a8c7ee"/>
           </view>
           <text class="lot__empty-title">没找到「{{ submittedKeyword }}」相关的车场</text>
-          <text class="lot__empty-tip">换个关键词试试，例如「科技园」「购物中心」</text>
-          <text class="lot__empty-tip">也可以直接看看附近的车场</text>
+          <text class="lot__empty-tip">换个关键词试试</text>
         </view>
       </template>
     </view>
@@ -386,121 +438,17 @@ const state = computed<PageState>(() => {
   color: #2b7cd3;
 }
 
-.lot__count {
-  font-size: 25rpx;
-  color: #909399;
-  line-height: 1.5;
-}
-
 .lot__list {
   display: flex;
   flex-direction: column;
   gap: 20rpx;
 }
 
-.lot__card {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20rpx;
-  background: #fff;
-  border-radius: 25rpx;
-  padding: 25rpx 30rpx;
-  box-shadow: 0 2rpx 6rpx rgba(48, 49, 51, 0.04);
-}
-
-.lot__card-main {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 7rpx;
-}
-
-.lot__card-name-row {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-  min-width: 0;
-}
-
-.lot__card-name {
-  font-size: 30rpx;
-  font-weight: 600;
-  color: #303133;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.lot__chip-tag {
-  flex: 0 0 auto;
-  display: inline-block;
-  font-size: 25rpx;
-  line-height: 40rpx;
-  padding: 0 15rpx;
-  border-radius: 10rpx;
-  background: #ecf5ff;
-  color: #2b7cd3;
-}
-
-.lot__chip-tag.is-ok {
-  background: #f0f9eb;
-  color: #57962f;
-}
-
-.lot__card-fee {
-  margin-top: 8rpx;
-  font-size: 26rpx;
-  color: #e6a23c;
-}
-
-.lot__card-fac {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12rpx;
-  margin-top: 5rpx;
-}
-
-.lot__card-fac text {
-  font-size: 25rpx;
-  line-height: 50rpx;
-  padding: 0 20rpx;
-  border-radius: 12rpx;
-  background: #f5f7fa;
-  color: #606266;
-  border: 1rpx solid #ebeef5;
-}
-
-.lot__card-space {
-  flex: 0 0 auto;
+.lot__tip {
+  padding: 10rpx 0 40rpx;
   text-align: center;
-}
-
-.lot__space-num {
-  display: block;
-  font-size: 40rpx;
-  font-weight: 600;
-  line-height: 1;
-  color: #2b7cd3;
-  font-family: Consolas, sans-serif;
-}
-
-.lot__space-num.is-full {
-  color: #909399;
-}
-
-.lot__space-tip {
-  display: block;
-  font-size: 24rpx;
-  color: #909399;
-}
-
-.lot__space-dist {
-  margin-top: 4rpx;
-  font-size: 24rpx;
-  color: #303133;
+  font-size: 26rpx;
+  color: #a8abb2;
 }
 
 .lot__empty {
