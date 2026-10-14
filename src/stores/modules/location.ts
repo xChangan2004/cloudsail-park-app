@@ -23,23 +23,23 @@ export const useLocationStore = defineStore('location', {
   }),
   getters: {
     /** 有可用坐标 */
-    hasCoords(state): boolean {
-      return state.lng != null && state.lat != null
-    },
-    /** 坐标缺失或已过期 ⇒ 需要重新定位 */
-    isStale(state): boolean {
-      if (state.lng == null || state.lat == null) return true
-      return Date.now() - state.locatedAt > TTL
-    },
+    hasCoords(): boolean {
+      return this.lng != null && this.lat != null
+    }
   },
   actions: {
+    /** 坐标是否过期 */
+    isStale(): boolean {
+      if (this.lng == null || this.lat == null) return true
+      return Date.now() - this.locatedAt > TTL
+    },
     /**
      * 定位。force=true 忽略保质期强制重定位。
-     * 返回是否拿到可用坐标 —— 失败不抛，调用方不用写 catch。
+     * 返回是否拿到可用坐标 —— 失败不抛
      */
     async locate(force = false): Promise<boolean> {
       if (pending) return pending
-      if (!force && !this.isStale) return true
+      if (!force && !this.isStale()) return true
 
       this.locating = true
       // 已有坐标 + 文案时保留旧值，别让下拉刷新闪一下「定位中...」
