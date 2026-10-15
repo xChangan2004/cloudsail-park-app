@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {reactive, ref} from 'vue'
 import {type AppOrderQuery, type AppOrderVO, getMyOrders, type OrderStatus} from "@/api/order";
-import {onReachBottom, onShow} from "@dcloudio/uni-app";
+import {onShow} from "@dcloudio/uni-app";
 import dayjs from "dayjs";
 
 const TAB_STATUS: Record<string, OrderStatus | undefined> = {
@@ -32,13 +32,25 @@ const orderList = ref<AppOrderVO[]>([])
 const total = ref(0)
 const loading = ref(false)
 const finished = ref(false)
+const refreshing = ref(false)
+
+const onRefreshChange = (e: { value: boolean }) => {
+  refreshing.value = e.value
+}
+
+const onRefresh = async () => {
+  try {
+    await fetchOrders(true)
+  } finally {
+    refreshing.value = false
+  }
+}
 
 const query = reactive<AppOrderQuery>({
   pageNo: 1,
   pageSize: 10,
   status: undefined,
 })
-
 
 /** 获取订单列表 */
 const fetchOrders = async (reset = false) => {
@@ -133,17 +145,12 @@ const goHelp = () => {
 onShow(() => {
   fetchOrders(true)
 })
-
-onReachBottom(() => {
-  fetchOrders()
-})
 </script>
 
 <template>
   <view class="order">
-    <t-navbar title="我的订单" placeholder/>
-
-    <view class="order__body">
+    <view class="order__top">
+      <t-navbar title="我的订单" placeholder/>
       <t-segmented
         t-class="order__seg"
         block
@@ -151,70 +158,96 @@ onReachBottom(() => {
         :value="activeTab"
         @change="onTabChange"
       />
-
-      <view v-if="orderList.length" class="order__list">
-        <view
-          v-for="o in orderList"
-          :key="o.id"
-          class="order__card"
-          :class="'is-' + STATUS_MAP[o.status]?.class"
-          @click="goDetail(o)"
-        >
-          <!-- 车场名 + 下单时间 + 状态 -->
-          <view class="order__head">
-            <text class="order__lot">{{ o.lotName }}</text>
-            <text class="order__time">{{ fmtTime(o.createTime) }}</text>
-            <text class="order__chip" :class="'order__chip--' + STATUS_MAP[o.status]?.class">
-              {{ STATUS_MAP[o.status]?.label }}
-            </text>
-          </view>
-
-          <!-- 车牌 / 时长 + 右侧金额 -->
-          <view class="order__main">
-            <view class="order__info">
-              <text class="order__line">{{ fmtPlate(o.plateNumber) }}</text>
-              <text v-if="o.duration" class="order__line">时长 {{ fmtDuration(o.duration) }}</text>
-            </view>
-            <text class="order__money" :class="{'is-danger': o.status === 0}">
-              ¥ {{ moneyOf(o) }}
-            </text>
-          </view>
-
-          <!-- 底部操作 -->
-          <view class="order__foot">
-            <template v-if="o.status === 0">
-              <text class="order__btn order__btn--primary" @tap.stop="goPay(o)">立即缴费</text>
-              <text class="order__btn" @tap.stop="goHelp">疑问</text>
-            </template>
-            <template v-else>
-              <text v-if="o.status === 1" class="order__link is-primary" @tap.stop="goInvoice(o)">开发票</text>
-              <text v-if="footTip(o)" class="order__foot-tip">{{ footTip(o) }}</text>
-            </template>
-          </view>
-        </view>
-
-        <view v-if="loading" class="order__more">加载中…</view>
-        <view v-else-if="finished && orderList.length >= query.pageSize" class="order__more">
-          没有更多了
-        </view>
-      </view>
-
-      <view v-else-if="loading" class="order__empty">
-        <text class="order__empty-text">加载中…</text>
-      </view>
-
-      <view v-else class="order__empty">
-        <t-icon name="list" size="64rpx" color="#c9d5e2"/>
-        <text class="order__empty-text">暂无相关订单</text>
-      </view>
     </view>
+
+    <t-pull-down-refresh
+      t-class="order__pull"
+      :value="refreshing"
+      :success-duration="600"
+      :refresh-timeout="10000"
+      @change="onRefreshChange"
+      @refresh="onRefresh"
+      @scrolltolower="fetchOrders()"
+    >
+      <view class="order__body">
+        <view v-if="orderList.length" class="order__list">
+          <view
+            v-for="o in orderList"
+            :key="o.id"
+            class="order__card"
+            :class="'is-' + STATUS_MAP[o.status]?.class"
+            @click="goDetail(o)"
+          >
+            <!-- 车场名 + 下单时间 + 状态 -->
+            <view class="order__head">
+              <text class="order__lot">{{ o.lotName }}</text>
+              <text class="order__time">{{ fmtTime(o.createTime) }}</text>
+              <text class="order__chip" :class="'order__chip--' + STATUS_MAP[o.status]?.class">
+                {{ STATUS_MAP[o.status]?.label }}
+              </text>
+            </view>
+
+            <!-- 车牌 / 时长 + 右侧金额 -->
+            <view class="order__main">
+              <view class="order__info">
+                <text class="order__line">{{ fmtPlate(o.plateNumber) }}</text>
+                <text v-if="o.duration" class="order__line">时长 {{ fmtDuration(o.duration) }}</text>
+              </view>
+              <text class="order__money" :class="{'is-danger': o.status === 0}">
+                ¥ {{ moneyOf(o) }}
+              </text>
+            </view>
+
+            <!-- 底部操作 -->
+            <view class="order__foot">
+              <template v-if="o.status === 0">
+                <text class="order__btn order__btn--primary" @tap.stop="goPay(o)">立即缴费</text>
+                <text class="order__btn" @tap.stop="goHelp">疑问</text>
+              </template>
+              <template v-else>
+                <text v-if="o.status === 1" class="order__link is-primary" @tap.stop="goInvoice(o)">开发票</text>
+                <text v-if="footTip(o)" class="order__foot-tip">{{ footTip(o) }}</text>
+              </template>
+            </view>
+          </view>
+
+          <view v-if="loading" class="order__more">加载中…</view>
+          <view v-else-if="finished && orderList.length >= query.pageSize" class="order__more">
+            没有更多了
+          </view>
+        </view>
+
+        <view v-else-if="loading" class="order__empty">
+          <text class="order__empty-text">加载中…</text>
+        </view>
+
+        <view v-else class="order__empty">
+          <t-icon name="list" size="64rpx" color="#c9d5e2"/>
+          <text class="order__empty-text">暂无相关订单</text>
+        </view>
+      </view>
+    </t-pull-down-refresh>
   </view>
 </template>
 
 <style scoped lang="scss">
 .order {
-  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
   background: #f5f6f8;
+}
+
+.order__top {
+  flex: 0 0 auto;
+  padding: 0 20rpx;
+  background: #fff;
+}
+
+:deep(.order__pull) {
+  flex: 1;
+  min-height: 0;
 }
 
 .order__body {

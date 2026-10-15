@@ -21,7 +21,11 @@
 			}
 		},
 		{
-			"path": "pages/order/index"
+			"path": "pages/order/index",
+			"style": {
+				"enablePullDownRefresh": false,
+				"disableScroll": true
+			}
 		},
 		{
 			"path": "pages/order/invoice"
