@@ -1,6 +1,9 @@
 /** 胶囊下方的呼吸位(px)，按视觉微调即可 */
 const GAP = 20
 
+/** 非小程序端状态栏下方的呼吸位(px)：没有胶囊要避，只留视觉间距 */
+const GAP_APP = 12
+
 /** 拿不到胶囊时的兜底导航栏高度(px)，微信标准是 44 */
 const FALLBACK_NAV_BAR = 44
 
@@ -51,9 +54,17 @@ const measure = (): NavbarSafe => {
 export const useNavbarSafe = () => {
   const {statusBarHeight, navBarBottom} = measure()
 
+  let heroPaddingTop = ''
+  // #ifdef MP-WEIXIN
+  heroPaddingTop = `${navBarBottom + GAP}px`
+  // #endif
+  // #ifndef MP-WEIXIN
+  heroPaddingTop = `calc(var(--status-bar-height) + ${GAP_APP}px)`
+  // #endif
+
   return {
     statusBarHeight,
     navBarBottom,
-    heroPaddingTop: `${navBarBottom + GAP}px`,
+    heroPaddingTop,
   }
 }
