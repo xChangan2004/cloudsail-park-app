@@ -56,7 +56,10 @@
 		"navigationBarTextStyle": "black",
 		"navigationBarTitleText": "云帆智泊",
 		"navigationBarBackgroundColor": "#FFFFFF",
-		"backgroundColor": "#F8F8F8"
+		"backgroundColor": "#F8F8F8",
+		"app-plus": {
+			"bounce": "none"
+		}
 	},
 	"tabBar": {
 		"color": "#a8abb2",
