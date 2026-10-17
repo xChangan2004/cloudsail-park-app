@@ -171,6 +171,11 @@ onReady(() => {
 const goSearch = () => {
   uni.navigateTo({url: '/pages/lot/list'})
 }
+
+/** 跳转记录详情页 */
+const goRecord = (item: MyParkingStatusVO) => {
+  uni.navigateTo({url: `/pages/record/detail?recordId=${item.recordId}`})
+}
 </script>
 
 <template>
@@ -233,7 +238,7 @@ const goSearch = () => {
 
                 <view class="home__car-bot">
                   <text class="home__car-time">{{ parkedText(item) }}</text>
-                  <text class="home__car-more">查看详情</text>
+                  <text class="home__car-more" @tap.stop="goRecord(item)">查看详情</text>
                 </view>
               </view>
             </swiper-item>

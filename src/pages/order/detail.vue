@@ -69,6 +69,17 @@ const banner = computed(() => {
 const goPay = () => {
   uni.navigateTo({url: `/pages/pay/index?orderId=${orderId.value}`})
 }
+
+const goRecord = () => {
+  if (!detail?.value?.recordId) {
+    uni.showToast({
+      title: '暂无记录信息',
+      icon: 'none',
+    })
+    return
+  }
+  uni.navigateTo({url: `/pages/record/detail?recordId=${detail.value.recordId}`})
+}
 </script>
 
 <template>
@@ -173,7 +184,7 @@ const goPay = () => {
         </view>
 
         <view v-else class="bar__cell is-ghost">
-          <t-button t-class="bar__btn" size="medium" block theme="primary" variant="outline">
+          <t-button t-class="bar__btn" size="medium" block theme="primary" variant="outline" @click="goRecord">
             查看停车记录
           </t-button>
         </view>
