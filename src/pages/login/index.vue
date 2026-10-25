@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {ref, reactive, onUnmounted} from "vue"
-import {login, sendCode} from "@/api/auth";
-import {useBadgeStore, useUserStore} from "@/stores";
+import {type AppLoginVO, login, sendCode, wxLogin} from "@/api/auth";
+import {useUserStore} from "@/stores";
 
 // 获取屏幕边界到安全区域的距离
 const {safeAreaInsets} = uni.getSystemInfoSync()
@@ -29,6 +29,17 @@ const stopCountdown = () => {
 
 onUnmounted(stopCountdown)
 
+/** 登录统一收尾：needBindPhone 决定落到哪 */
+const afterLogin = (info: AppLoginVO) => {
+  userStore.setLoginInfo(info)
+  if (info.needBindPhone) {
+    // 微信新用户还没有手机号，先去补，补完再进首页
+    uni.reLaunch({url: '/pages/login/bind-phone'})
+    return
+  }
+  uni.reLaunch({url: '/pages/index/index'})
+}
+
 const onSendCode = async () => {
   if (countdown.value > 0) return
   try {
@@ -53,13 +64,50 @@ const onLogin = async () => {
   if (logging.value) return
   logging.value = true
   try {
-    const res = await login({phone: form.phone, code: form.code})
-    userStore.setLoginInfo(res.data)
-    useBadgeStore().refreshUnpaid()
-    uni.reLaunch({url: '/pages/index/index'})
+    const {data} = await login({phone: form.phone, code: form.code})
+    afterLogin(data)
   } finally {
     logging.value = false
   }
+}
+
+const onWxLogin = () => {
+  if (!agreeing.value) {
+    uni.showToast({title: '请先阅读并同意用户协议', icon: 'none'})
+    return
+  }
+
+  if (logging.value) return
+  logging.value = true
+
+  uni.showLoading({title: '登录中', mask: true})
+
+  uni.login({
+    provider: 'weixin',
+    success: async (res) => {
+      if (!res.code) {
+        uni.hideLoading()
+        uni.showToast({title: '微信授权失败，请重试', icon: 'none'})
+        logging.value = false
+        return
+      }
+      try {
+        const {data} = await wxLogin({code: res.code})
+        uni.hideLoading()
+        afterLogin(data)
+      } catch (e) {
+        uni.hideLoading()
+        uni.showToast({title: (e as Error)?.message || '登录失败，请重试', icon: 'none'})
+      } finally {
+        logging.value = false
+      }
+    },
+    fail: () => {
+      uni.hideLoading()
+      logging.value = false
+      uni.showToast({title: '已取消微信登录', icon: 'none'})
+    }
+  })
 }
 </script>
 
@@ -124,7 +172,7 @@ const onLogin = async () => {
       <view class="login__other-line"></view>
     </view>
 
-    <view class="login__wx">
+    <view class="login__wx" @click="onWxLogin">
       <view class="login__wx-dot">
         <t-icon name="logo-wechat-stroke-filled" size="14" color="#ffffff"/>
       </view>
@@ -151,9 +199,11 @@ const onLogin = async () => {
     --td-input-bg-color: transparent;
     --td-input-vertical-padding: 0rpx;
   }
+
   :deep(.login__input-text) {
     font-size: 26rpx !important;
   }
+
   :deep(.login__placeholder) {
     font-size: 26rpx !important;
     color: #c0c4cc !important;

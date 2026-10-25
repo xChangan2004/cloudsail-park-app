@@ -56,6 +56,9 @@
 		},
 		{
 			"path": "pages/login/index"
+		},
+		{
+			"path": "pages/login/bind-phone"
 		}
 	],
 	"globalStyle": {
