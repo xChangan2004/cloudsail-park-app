@@ -27,12 +27,18 @@ export interface AppParkingLotQuery extends PageParams {
   sortType?: sortType
 }
 
+export interface FacilityVO {
+  code: string
+  name: string
+  icon: string
+}
+
 export interface AppParkingLotVO {
   id: string
   name: string
   address: string
   cover?: string
-  facilities?: string[]
+  facilities?: FacilityVO[]
   longitude: number
   latitude: number
   totalSpaces: number

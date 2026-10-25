@@ -22,10 +22,10 @@ const emit = defineEmits<{
       <text class="lot-card__sub">{{ lot.address }}</text>
       <view v-if="lot.facilities?.length" class="lot-card__fac">
         <text
-          v-for="(f, i) in lot.facilities"
-          :key="i"
+          v-for="f in lot.facilities"
+          :key="f.code"
           class="lot-card__fac-item"
-        >{{ f }}</text>
+        >{{ f.name }}</text>
       </view>
     </view>
     <view class="lot-card__space">
