@@ -40,6 +40,15 @@
 			"path": "pages/mine/index"
 		},
 		{
+			"path": "pages/mine/about"
+		},
+		{
+			"path": "pages/mine/security"
+		},
+		{
+			"path": "pages/mine/profile"
+		},
+		{
 			"path": "pages/plate/index"
 		},
 		{

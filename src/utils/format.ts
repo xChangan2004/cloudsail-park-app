@@ -39,3 +39,16 @@ export const formatDate = (v?: string | null) => parseTime(v)?.format('YYYY-MM-D
 
 /** 格式化时间：14:20:33 */
 export const formatClock = (v?: string | null) => parseTime(v)?.format('HH:mm:ss') ?? ''
+
+/** 自适应占用大小单位 */
+export const formatSize = (kb: number) => {
+  const n = Number(kb) || 0
+  if (n <= 0) return '0 KB'
+  if (n < 1) return `${Math.round(n * 1024)} B`
+  if (n < 1024) return `${n.toFixed(1)} KB`
+  return `${(n / 1024).toFixed(1)} MB`
+}
+
+/** 手机号脱敏 */
+export const maskPhone = (p?: string) =>
+  p ? p.replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2') : ''

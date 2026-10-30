@@ -35,7 +35,7 @@ const handleUnauthorized = () => {
 }
 
 /** 静默接口 */
-const SILENT_APIS = ['/orders/unpaid-count']
+const SILENT_APIS = ['/orders/unpaid-count', '/auth/logout']
 
 const isSilent = (config: unknown) => {
   const url = String((config as { url?: string })?.url ?? '')
@@ -71,3 +71,36 @@ http.interceptors.response.use((response) => {
 })
 
 export default http
+
+/** 文件上传 */
+export const uploadFile = <T = string>(path: string, filePath: string, name = 'file'): Promise<T> => {
+  return new Promise((resolve, reject) => {
+    uni.uploadFile({
+      url: `${baseURL}${apiPath}${path}`,
+      filePath,
+      name,
+      header: {Authorization: useUserStore().token},
+      success: (res) => {
+        let body: Result
+        try {
+          body = JSON.parse(res.data)
+        } catch {
+          uni.showToast({title: '上传失败', icon: 'none'})
+          reject(new Error('上传失败'))
+          return
+        }
+        if (body.code !== 200) {
+          if (body.code === 401) handleUnauthorized()
+          else uni.showToast({title: body.msg || '上传失败', icon: 'none'})
+          reject(new Error(body.msg || '上传失败'))
+          return
+        }
+        resolve(body.data as T)
+      },
+      fail: () => {
+        uni.showToast({title: '上传失败，请检查网络', icon: 'none'})
+        reject(new Error('上传失败'))
+      }
+    })
+  })
+}

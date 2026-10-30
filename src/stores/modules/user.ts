@@ -8,6 +8,7 @@ export const useUserStore = defineStore('user', {
     nickname: '',
     avatar: '',
     phone: '',
+    bindWx: false,
     isNewUser: false
   }),
   getters: {
@@ -22,6 +23,7 @@ export const useUserStore = defineStore('user', {
       this.nickname = info.nickname ?? ''
       this.avatar = info.avatar ?? ''
       this.phone = info.phone ?? ''
+      this.bindWx = info.bindWx ?? false
       this.isNewUser = info.isNewUser ?? false
     },
     resetLoginState() {

@@ -8,6 +8,7 @@ export interface AppLoginVO {
   phone?: string
   isNewUser?: boolean
   needBindPhone?: boolean
+  bindWx?: boolean
 }
 
 export interface AppLoginDTO {
@@ -51,6 +52,16 @@ export interface BindPhoneWxDTO {
 /** 绑定手机号（微信一键获取手机号） */
 export const bindPhoneByWxCode = (data: BindPhoneWxDTO) => {
   return http.post<string>('/auth/bind-phone/wx', data)
+}
+
+/** 绑定微信 */
+export const bindWx = (data: WxLoginDTO) => {
+  return http.post('/auth/bind-wx', data)
+}
+
+/** 解绑微信 */
+export const unbindWx = () => {
+  return http.post('/auth/unbind-wx')
 }
 
 /** 退出登录 */
