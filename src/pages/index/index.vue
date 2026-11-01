@@ -176,6 +176,12 @@ const goSearch = () => {
 const goRecord = (item: MyParkingStatusVO) => {
   uni.navigateTo({url: `/pages/record/detail?recordId=${item.recordId}`})
 }
+
+const onSelectLot = (lot: AppParkingLotVO) => {
+  uni.navigateTo({
+    url: `/pages/lot/detail?id=${lot.id}`
+  })
+}
 </script>
 
 <template>
@@ -304,6 +310,7 @@ const goRecord = (item: MyParkingStatusVO) => {
             v-for="lot in lotList"
             :key="lot.id"
             :lot="lot"
+            @select="onSelectLot"
           />
         </view>
 

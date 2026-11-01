@@ -1,107 +1,114 @@
 {
-	"easycom": {
-		"autoscan": true,
-		"custom": {
-			"^t-(.*)": "@tdesign/uniapp/$1/$1.vue"
-		}
-	},
-	"pages": [
-		//pages数组中第一项表示应用启动页，参考：https://uniapp.dcloud.io/collocation/pages
-		{
-			"path": "pages/index/index",
-			"style": {
-				"enablePullDownRefresh": false,
-				"disableScroll": true
-			}
-		},
-		{
-			"path": "pages/lot/list",
-			"style": {
-				"enablePullDownRefresh": false
-			}
-		},
-		{
-			"path": "pages/order/index",
-			"style": {
-				"enablePullDownRefresh": false,
-				"disableScroll": true
-			}
-		},
-		{
-			"path": "pages/order/invoice"
-		},
-		{
-			"path": "pages/order/detail"
-		},
-		{
-			"path": "pages/record/detail"
-		},
-		{
-			"path": "pages/mine/index"
-		},
-		{
-			"path": "pages/mine/about"
-		},
-		{
-			"path": "pages/mine/security"
-		},
-		{
-			"path": "pages/mine/profile"
-		},
-		{
-			"path": "pages/plate/index"
-		},
-		{
-			"path": "pages/plate/add"
-		},
-		{
-			"path": "pages/coupon/mine"
-		},
-		{
-			"path": "pages/coupon/center"
-		},
-		{
-			"path": "pages/pay/index"
-		},
-		{
-			"path": "pages/login/index"
-		},
-		{
-			"path": "pages/login/bind-phone"
-		}
-	],
-	"globalStyle": {
-		"navigationStyle": "custom",
-		"navigationBarTextStyle": "black",
-		"navigationBarTitleText": "云帆智泊",
-		"navigationBarBackgroundColor": "#FFFFFF",
-		"backgroundColor": "#F8F8F8",
-		"app-plus": {
-			"bounce": "none"
-		}
-	},
-	"tabBar": {
-		"color": "#a8abb2",
-		"selectedColor": "#409eff",
-		"backgroundColor": "#ffffff",
-		"list": [{
-				"pagePath": "pages/index/index",
-				"text": "首页",
-				"iconPath": "static/tabbar/home.png",
-				"selectedIconPath": "static/tabbar/home-selected.png"
-			},
-			{
-				"pagePath": "pages/order/index",
-				"text": "订单",
-				"iconPath": "static/tabbar/order.png",
-				"selectedIconPath": "static/tabbar/order-selected.png"
-			},
-			{
-				"pagePath": "pages/mine/index",
-				"text": "我的",
-				"iconPath": "static/tabbar/mine.png",
-				"selectedIconPath": "static/tabbar/mine-selected.png"
-			}
-		]
-	}
+  "easycom": {
+    "autoscan": true,
+    "custom": {
+      "^t-(.*)": "@tdesign/uniapp/$1/$1.vue"
+    }
+  },
+  "pages": [
+    //pages数组中第一项表示应用启动页，参考：https://uniapp.dcloud.io/collocation/pages
+    {
+      "path": "pages/index/index",
+      "style": {
+        "enablePullDownRefresh": false,
+        "disableScroll": true
+      }
+    },
+    {
+      "path": "pages/lot/list",
+      "style": {
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/lot/detail",
+      "style": {
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/order/index",
+      "style": {
+        "enablePullDownRefresh": false,
+        "disableScroll": true
+      }
+    },
+    {
+      "path": "pages/order/invoice"
+    },
+    {
+      "path": "pages/order/detail"
+    },
+    {
+      "path": "pages/record/detail"
+    },
+    {
+      "path": "pages/mine/index"
+    },
+    {
+      "path": "pages/mine/about"
+    },
+    {
+      "path": "pages/mine/security"
+    },
+    {
+      "path": "pages/mine/profile"
+    },
+    {
+      "path": "pages/plate/index"
+    },
+    {
+      "path": "pages/plate/add"
+    },
+    {
+      "path": "pages/coupon/mine"
+    },
+    {
+      "path": "pages/coupon/center"
+    },
+    {
+      "path": "pages/pay/index"
+    },
+    {
+      "path": "pages/login/index"
+    },
+    {
+      "path": "pages/login/bind-phone"
+    }
+  ],
+  "globalStyle": {
+    "navigationStyle": "custom",
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "云帆智泊",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "backgroundColor": "#F8F8F8",
+    "app-plus": {
+      "bounce": "none"
+    }
+  },
+  "tabBar": {
+    "color": "#a8abb2",
+    "selectedColor": "#409eff",
+    "backgroundColor": "#ffffff",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "static/tabbar/home.png",
+        "selectedIconPath": "static/tabbar/home-selected.png"
+      },
+      {
+        "pagePath": "pages/order/index",
+        "text": "订单",
+        "iconPath": "static/tabbar/order.png",
+        "selectedIconPath": "static/tabbar/order-selected.png"
+      },
+      {
+        "pagePath": "pages/mine/index",
+        "text": "我的",
+        "iconPath": "static/tabbar/mine.png",
+        "selectedIconPath": "static/tabbar/mine-selected.png"
+      }
+    ]
+  }
 }

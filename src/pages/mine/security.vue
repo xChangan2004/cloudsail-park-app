@@ -103,9 +103,6 @@ const onDeleteAccount = () => {
           <text class="sc__desc">绑定后可用微信一键登录</text>
         </view>
         <view class="sc__value">
-          <text class="sc__vt" :class="{'sc__vt--off': !userStore.bindWx}">
-            {{ userStore.bindWx ? '已绑定' : '未绑定' }}
-          </text>
           <text v-if="userStore.bindWx" class="sc__act sc__act--danger">解绑</text>
           <text v-else class="sc__act">去绑定</text>
         </view>

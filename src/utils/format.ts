@@ -52,3 +52,22 @@ export const formatSize = (kb: number) => {
 /** 手机号脱敏 */
 export const maskPhone = (p?: string) =>
   p ? p.replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2') : ''
+
+/** 号码分段 */
+export const formatPhone = (raw: string) => {
+  const d = raw.replace(/\D/g, '')
+  switch (d.length) {
+    case 11:
+      return d[0] === '1'
+        ? `${d.slice(0, 3)} ${d.slice(3, 7)} ${d.slice(7)}`   // 手机
+        : `${d.slice(0, 3)}-${d.slice(3, 7)} ${d.slice(7)}`   // 020-xxxx xxxx
+    case 12:
+      return `${d.slice(0, 4)}-${d.slice(4, 8)} ${d.slice(8)}` // 0755-xxxx xxxx
+    case 10:
+      return `${d.slice(0, 3)}-${d.slice(3, 6)} ${d.slice(6)}`
+    case 8:
+      return `${d.slice(0, 4)} ${d.slice(4)}`
+    default:
+      return raw
+  }
+}

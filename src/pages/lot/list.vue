@@ -183,6 +183,12 @@ onReachBottom(() => {
   if (state.value !== 'result') return
   fetchLots()
 })
+
+const onSelectLot = (lot: AppParkingLotVO) => {
+  uni.navigateTo({
+    url: `/pages/lot/detail?id=${lot.id}`
+  })
+}
 </script>
 
 <template>
@@ -258,6 +264,7 @@ onReachBottom(() => {
             v-for="lot in lots"
             :key="lot.id"
             :lot="lot"
+            @select="onSelectLot"
           />
         </view>
         <view v-if="loading" class="lot__tip">加载中…</view>

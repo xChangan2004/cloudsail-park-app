@@ -80,6 +80,11 @@ const goRecord = () => {
   }
   uni.navigateTo({url: `/pages/record/detail?recordId=${detail.value.recordId}`})
 }
+
+const onLot = () => {
+  if (!detail.value?.lotId) return
+  uni.navigateTo({url: `/pages/lot/detail?id=${detail.value.lotId}`})
+}
 </script>
 
 <template>
@@ -99,9 +104,10 @@ const goRecord = () => {
           <view class="row__k">订单编号</view>
           <view class="row__v row__v--no">{{ detail?.orderNo }}</view>
         </view>
-        <view class="row">
+        <view class="row" @tap="onLot">
           <view class="row__k">停车场</view>
           <view class="row__v">{{ detail?.lotName }}</view>
+          <t-icon name="chevron-right" size="28rpx" color="#c0c4cc"/>
         </view>
         <view class="row">
           <view class="row__k">车牌号码</view>
@@ -171,12 +177,6 @@ const goRecord = () => {
 
       <!-- 操作栏 -->
       <view class="bar">
-        <view class="bar__cell is-gray">
-          <t-button t-class="bar__btn" size="medium" block>
-            联系车场
-          </t-button>
-        </view>
-
         <view v-if="detail?.status === 0" class="bar__cell is-pri">
           <t-button t-class="bar__btn" size="medium" block theme="primary" @click="goPay">
             去支付
@@ -206,7 +206,6 @@ const goRecord = () => {
   flex-direction: column;
   gap: 20rpx;
   padding: 25rpx 30rpx;
-  padding-bottom: calc(132rpx + 64rpx + constant(safe-area-inset-bottom));
   padding-bottom: calc(132rpx + 64rpx + env(safe-area-inset-bottom));
 }
 
@@ -397,7 +396,6 @@ const goRecord = () => {
   padding: 22rpx 30rpx;
   background: #fff;
   border-top: 1px solid #ebeef5;
-  padding-bottom: calc(22rpx + constant(safe-area-inset-bottom));
   padding-bottom: calc(22rpx + env(safe-area-inset-bottom));
   --td-button-border-radius: 44rpx;
   --td-button-medium-height: 88rpx;
