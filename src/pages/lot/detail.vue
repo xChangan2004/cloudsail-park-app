@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import {useNavbarSafe} from '@/hooks/useNavbarSafe'
 import {useLocationStore} from "@/stores"
 import {computed, ref} from "vue";
 import {type AppParkingLotDetailVO, getParkingLotDetail} from "@/api/parking";
@@ -7,7 +6,6 @@ import {onLoad, onShow} from "@dcloudio/uni-app";
 import {formatDistance, formatPhone} from "@/utils/format";
 import {freeMinutesText, money, ruleTypeText} from "@/utils/fee";
 
-const {heroPaddingTop} = useNavbarSafe()
 const loc = useLocationStore()
 
 const lotId = ref('')
@@ -114,7 +112,8 @@ const onNavigate = () => {
 
 <template>
   <view class="lot-detail">
-    <view class="hero" :style="{ paddingTop: heroPaddingTop }">
+    <t-navbar left-arrow placeholder/>
+    <view class="hero">
       <swiper
         v-if="heroImages.length"
         class="hero__swiper"
@@ -126,37 +125,17 @@ const onNavigate = () => {
         @change="onHeroChange"
       >
         <swiper-item v-for="(src, i) in heroImages" :key="`${i}-${src}`">
-          <image class="hero__img" :src="src" mode="aspectFill" @tap="onPreview(i)" />
+          <image class="hero__img" :src="src" mode="aspectFill" @tap="onPreview(i)"/>
         </swiper-item>
       </swiper>
 
-      <!-- 压暗一层，浅色实景上返回键和车场名才读得出来 -->
+      <!-- 有图压暗一层，浅色实景上车场名才读得出来 -->
       <view v-if="heroImages.length" class="hero__mask"></view>
-
-      <view v-if="!heroImages.length" class="hero__deco hero__deco--a"></view>
-      <view v-if="!heroImages.length" class="hero__deco hero__deco--b"></view>
-
-      <view class="hero__acts">
-        <view class="hero__act" hover-class="hero__act--hover" @tap="onBack">
-          <t-icon name="arrow-left" size="20" color="#fff"/>
-        </view>
-
-        <view class="hero__acts-right">
-          <!-- #ifdef MP-WEIXIN -->
-          <button class="hero__act" open-type="share">
-            <t-icon name="upload" size="20" color="#fff"/>
-          </button>
-          <!-- #endif -->
-          <!-- #ifndef MP-WEIXIN -->
-          <view class="hero__act" hover-class="hero__act--hover">
-            <t-icon name="upload" size="20" color="#fff"/>
-          </view>
-          <!-- #endif -->
-          <view class="hero__act" hover-class="hero__act--hover">
-            <t-icon name="star-1" size="20" color="#fff"/>
-          </view>
-        </view>
-      </view>
+      <!-- 没图用两个装饰圆兜底 -->
+      <template v-else>
+        <view class="hero__deco hero__deco--a"></view>
+        <view class="hero__deco hero__deco--b"></view>
+      </template>
 
       <view class="hero__title">{{ lot?.name || '车场详情' }}</view>
 
@@ -197,14 +176,17 @@ const onNavigate = () => {
         </view>
 
         <view class="card">
-          <view class="card__t">车场信息</view>
+
           <view class="card__row">
             <view class="card__row-k">营业时间</view>
             <view class="card__row-v">24 小时</view>
           </view>
           <view v-if="lot?.contact" class="card__row" @tap="onCall">
             <view class="card__row-k">联系方式</view>
-            <view class="card__row-v" :class="{'is-link': canCall}">{{ formatPhone(contactText) }}</view>
+            <view class="card__row-v" :class="{'is-link': canCall}" style="display: flex; gap: 10rpx; align-items: center">
+              <t-icon name="call" size="16" />
+              {{ formatPhone(contactText) }}
+            </view>
           </view>
         </view>
 
@@ -273,6 +255,7 @@ const onNavigate = () => {
 
 .hero {
   position: relative;
+  height: 350rpx;
   overflow: hidden;
   padding-bottom: 40rpx;
   background: linear-gradient(168deg, #3a83e4 0%, #2b74d8 54%, #1d59b8 100%);
@@ -319,53 +302,22 @@ const onNavigate = () => {
     background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 70%);
   }
 
-  &__acts {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 30rpx;
-    pointer-events: none;
-  }
-
-  &__acts-right {
-    display: flex;
-    align-items: center;
-    gap: 30rpx;
-  }
-
-  &__act {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 64rpx;
-    height: 64rpx;
-    margin: 0;
-    padding: 0;
-    line-height: 1;
-    background: transparent;
-    border: none;
-    pointer-events: auto;
-  }
-
-  /* 移除小程序按钮自带的边框 */
-  &__act::after {
-    border: none;
-  }
-
-  &__act--hover {
-    opacity: 0.6;
-  }
-
   &__title {
-    position: relative;
-    padding: 65rpx 30rpx 0;
+    position: absolute;
+    left: 30rpx;
+    right: 30rpx;
+    bottom: 44rpx;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
     font-size: 38rpx;
     font-weight: 700;
     line-height: 1.3;
     letter-spacing: 1rpx;
     color: #fff;
     word-break: break-all;
+    text-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.35);
     pointer-events: none;
   }
 
