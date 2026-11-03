@@ -152,7 +152,7 @@ const estimate = computed(() => buildEstimate(props.rule))
   gap: 22rpx;
   background: #fff;
   border-radius: 40rpx 40rpx 0 0;
-  padding: 36rpx 36rpx 0;
+  padding: 36rpx 36rpx calc(28px + env(safe-area-inset-bottom));
 }
 
 .sheet__head {
