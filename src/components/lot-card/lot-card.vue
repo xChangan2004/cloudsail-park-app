@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import type {AppParkingLotVO} from '@/api/parking'
 import {formatDistance} from "@/utils/format"
+import {computed} from 'vue'
 
-defineProps<{
+const props = defineProps<{
   lot: AppParkingLotVO
 }>()
 
 const emit = defineEmits<{
   'select': [lot: AppParkingLotVO]
 }>()
+
+const MAX_FAC = 3
+
+const facShown = computed(() => (props.lot.facilities ?? []).slice(0, MAX_FAC))
+const facRest = computed(() => Math.max(0, (props.lot.facilities?.length ?? 0) - MAX_FAC))
 </script>
 
 <template>
@@ -20,12 +26,9 @@ const emit = defineEmits<{
     <view class="lot-card__main">
       <text class="lot-card__name">{{ lot.name }}</text>
       <text class="lot-card__sub">{{ lot.address }}</text>
-      <view v-if="lot.facilities?.length" class="lot-card__fac">
-        <text
-          v-for="f in lot.facilities"
-          :key="f.code"
-          class="lot-card__fac-item"
-        >{{ f.name }}</text>
+      <view v-if="facShown.length" class="lot-card__fac">
+        <text v-for="f in facShown" :key="f.code" class="lot-card__fac-item">{{ f.name }}</text>
+        <text v-if="facRest" class="lot-card__fac-item lot-card__fac-item--more">+{{ facRest }}</text>
       </view>
     </view>
     <view class="lot-card__space">
@@ -91,19 +94,31 @@ const emit = defineEmits<{
 
 .lot-card__fac {
   display: flex;
-  flex-wrap: wrap;
-  gap: 15rpx;
+  flex-wrap: nowrap;
+  gap: 12rpx;
   margin-top: 7rpx;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .lot-card__fac-item {
-  display: inline-block;
+  flex: 0 1 auto;
+  min-width: 0;
   font-size: 25rpx;
   line-height: 40rpx;
   padding: 0 15rpx;
   border-radius: 10rpx;
   background: #ecf5ff;
   color: #2b7cd3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lot-card__fac-item--more {
+  flex: 0 0 auto;
+  background: #f5f7fa;
+  color: #909399;
 }
 
 .lot-card__space {
