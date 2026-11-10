@@ -65,11 +65,31 @@ const total = ref(0)
 const loading = ref(false)
 const finished = ref(false)
 
+/** 就近推荐 */
+const recommendLots = ref<AppParkingLotVO[]>([])
+
 /** 请求参数 */
 const query = reactive<AppParkingLotQuery>({
   pageNo: 1,
   pageSize: 10,
 })
+
+const fetchRecommend = async () => {
+  if (!loc.hasCoords) return
+  try {
+    const res = await getParkingLot({
+      pageNo: 1,
+      pageSize: 2,
+      lng: loc.lng,
+      lat: loc.lat,
+      radiusKm: radius.value,
+      sortType: 'distance',
+    })
+    recommendLots.value = res.data?.list ?? []
+  } catch {
+    recommendLots.value = []
+  }
+}
 
 /** 获取停车场 */
 const fetchLots = async (reset = false) => {
@@ -81,6 +101,7 @@ const fetchLots = async (reset = false) => {
     lots.value = []
     total.value = 0
     finished.value = true
+    recommendLots.value = []
     return
   }
   needLocation.value = false
@@ -105,10 +126,16 @@ const fetchLots = async (reset = false) => {
     lots.value = reset ? list : lots.value.concat(list)
     query.pageNo++;
     finished.value = list.length < query.pageSize
+
+    if (reset) {
+      if (list.length) recommendLots.value = []   // 有结果了，把上次的推荐清掉
+      else fetchRecommend()                       // 空了才去拉
+    }
   } catch {
     if (reset) {
       lots.value = []
       total.value = 0
+      recommendLots.value = []
     }
     finished.value = true
   } finally {
@@ -132,6 +159,7 @@ const onClear = () => {
   keyword.value = ''
   submittedKeyword.value = ''
   lots.value = []
+  recommendLots.value = []
   total.value = 0
   query.pageNo = 1
   finished.value = false
@@ -147,7 +175,7 @@ const onRetryLocate = async () => {
   await fetchLots(true)
 }
 
-/** 退回上一页；被直接打开时回首页 tab */
+/** 退回上一页若被直接打开时回首页 tab */
 const onCancel = () => {
   if (getCurrentPages().length > 1) uni.navigateBack()
   else uni.switchTab({url: "/pages/index/index"})
@@ -174,6 +202,18 @@ const state = computed<PageState>(() => {
   if (loading.value && !lots.value.length) return 'result'
   return lots.value.length ? 'result' : 'empty'
 })
+
+const emptyTitle = computed(() =>
+  onlyFree.value
+    ? `${radius.value}km 内暂无空位`
+    : `${radius.value}km 内没找到「${submittedKeyword.value}」`
+)
+
+const emptyTip = computed(() =>
+  onlyFree.value
+    ? '取消上面的「只看有空位」，看看全部车场'
+    : '把上面的搜索范围调大一点，或换个关键词试试'
+)
 
 onLoad(async () => {
   await loc.locate()
@@ -232,47 +272,6 @@ const onSelectLot = (lot: AppParkingLotVO) => {
           </view>
         </template>
       </template>
-      <template v-else-if="state === 'result'">
-        <view class="lot__range">
-          <view class="lot__range-label">搜索范围</view>
-          <t-segmented
-            t-class="range__seg"
-            block
-            :options="radiusOptions"
-            :value="radius"
-            @change="onRadiusChange"
-          />
-        </view>
-        <view class="lot__sort">
-          <view
-            v-for="s in sortOptions"
-            :key="s.value"
-            class="lot__sort-item"
-            :class="{'is-on': s.value === sort}"
-            @tap="onSortChange(s.value)"
-          >
-            {{ s.label }}
-            <t-icon name="chevron-down" size="14" :color="s.value === sort ? '#2b7cd3' : '#909399'"/>
-          </view>
-          <view class="lot__filter" :class="{'is-on': onlyFree}" @tap="onOnlyFreeChange">
-            <t-icon name="check" size="12" :color="onlyFree ? '#2b7cd3' : '#c0c4cc'"/>
-            <text>只看有空位</text>
-          </view>
-        </view>
-        <view class="lot__list">
-          <lot-card
-            v-for="lot in lots"
-            :key="lot.id"
-            :lot="lot"
-            @select="onSelectLot"
-          />
-        </view>
-        <view v-if="loading" class="lot__tip">加载中…</view>
-        <view v-else-if="!finished && lots.length" class="lot__tip">
-          上拉加载更多 · 已显示 {{ lots.length }} / {{ total }}
-        </view>
-        <view v-else-if="finished" class="lot__tip">没有更多数据</view>
-      </template>
       <template v-else-if="state === 'needLocation'">
         <view class="lot__empty">
           <view class="lot__empty-icon">
@@ -286,13 +285,73 @@ const onSelectLot = (lot: AppParkingLotVO) => {
         </view>
       </template>
       <template v-else>
-        <view class="lot__empty">
-          <view class="lot__empty-icon">
-            <t-icon name="search" size="34" color="#a8c7ee"/>
-          </view>
-          <text class="lot__empty-title">没找到「{{ submittedKeyword }}」相关的车场</text>
-          <text class="lot__empty-tip">换个关键词试试</text>
+        <view class="lot__range">
+          <view class="lot__range-label">搜索范围</view>
+          <t-segmented
+            t-class="range__seg"
+            block
+            :options="radiusOptions"
+            :value="radius"
+            @change="onRadiusChange"
+          />
         </view>
+        <view class="lot__sort" :class="{'is-solo': lots.length <= 0 || state === 'empty'}">
+          <template v-if="lots.length > 0 && state === 'result'">
+            <view
+              v-for="s in sortOptions"
+              :key="s.value"
+              class="lot__sort-item"
+              :class="{'is-on': s.value === sort}"
+              @tap="onSortChange(s.value)"
+            >
+              {{ s.label }}
+              <t-icon name="chevron-down" size="14" :color="s.value === sort ? '#2b7cd3' : '#909399'"/>
+            </view>
+          </template>
+          <view class="lot__filter" :class="{'is-on': onlyFree}" @tap="onOnlyFreeChange">
+            <t-icon name="check" size="12" :color="onlyFree ? '#2b7cd3' : '#c0c4cc'"/>
+            <text>只看有空位</text>
+          </view>
+        </view>
+        <template v-if="state === 'result'">
+          <view class="lot__list">
+            <lot-card
+              v-for="lot in lots"
+              :key="lot.id"
+              :lot="lot"
+              @select="onSelectLot"
+            />
+          </view>
+          <view v-if="loading" class="lot__tip">加载中…</view>
+          <view v-else-if="!finished && lots.length" class="lot__tip">
+            上拉加载更多 · 已显示 {{ lots.length }} / {{ total }}
+          </view>
+          <view v-else-if="finished" class="lot__tip">没有更多数据</view>
+        </template>
+        <template v-else>
+          <view class="lot__empty">
+            <view class="lot__empty-icon">
+              <t-icon name="search" size="34" color="#a8c7ee"/>
+            </view>
+            <text class="lot__empty-title">{{ emptyTitle }}</text>
+            <text class="lot__empty-tip">{{ emptyTip }}</text>
+          </view>
+
+          <template v-if="recommendLots.length">
+            <view class="lot__rec-head">
+              <text class="lot__rec-t">附近车场</text>
+              <text class="lot__rec-s">就近 {{ recommendLots.length }} 家</text>
+            </view>
+            <view class="lot__list">
+              <lot-card
+                v-for="lot in recommendLots"
+                :key="lot.id"
+                :lot="lot"
+                @select="onSelectLot"
+              />
+            </view>
+          </template>
+        </template>
       </template>
     </view>
   </view>
@@ -368,17 +427,8 @@ const onSelectLot = (lot: AppParkingLotVO) => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 0 30rpx;
-}
-
-.lot.is-result .lot__body {
   padding: 22rpx 30rpx 25rpx;
   gap: 20rpx;
-}
-
-.lot.is-empty .lot__body {
-  padding: 0 30rpx 25rpx;
-  gap: 0;
 }
 
 .lot__head {
@@ -450,6 +500,10 @@ const onSelectLot = (lot: AppParkingLotVO) => {
   color: #606266;
 }
 
+.lot__sort.is-solo {
+  justify-content: flex-end;
+}
+
 .lot__sort-item {
   display: flex;
   align-items: center;
@@ -498,7 +552,7 @@ const onSelectLot = (lot: AppParkingLotVO) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 114rpx 0 80rpx;
+  padding: 120rpx 0 60rpx;
 }
 
 .lot__empty-icon {
@@ -542,5 +596,24 @@ const onSelectLot = (lot: AppParkingLotVO) => {
 
 .lot__empty-btn--hover {
   background: #2b7cd3;
+}
+
+.lot__rec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 0 5rpx;
+}
+
+.lot__rec-t {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #303133;
+}
+
+.lot__rec-s {
+  font-size: 26rpx;
+  color: #909399;
 }
 </style>
