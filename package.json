@@ -1,6 +1,7 @@
 {
   "name": "cloudsail-park-app",
   "version": "1.0.0",
+  "packageManager": "pnpm@12.21.0",
   "scripts": {
     "dev:custom": "uni -p",
     "dev:h5": "uni",
