@@ -38,6 +38,16 @@ const afterLogin = (info: AppLoginVO) => {
     return
   }
   uni.reLaunch({url: '/pages/index/index'})
+  // 冷静期内照常放行，但注销不能是「静默」的：提示一次，告诉用户还能撤销
+  if (info.deletionPending) {
+    setTimeout(() => {
+      uni.showToast({
+        title: '账号注销中，可在「我的-账号与安全」撤销',
+        icon: 'none',
+        duration: 3000
+      })
+    }, 800)
+  }
 }
 
 const onSendCode = async () => {

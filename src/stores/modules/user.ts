@@ -9,7 +9,11 @@ export const useUserStore = defineStore('user', {
     avatar: '',
     phone: '',
     bindWx: false,
-    isNewUser: false
+    isNewUser: false,
+    /** 注销冷静期中 */
+    deletionPending: false,
+    /** 注销生效时间 */
+    deletionEffectiveTime: ''
   }),
   getters: {
     isLogin(): boolean {
@@ -25,6 +29,13 @@ export const useUserStore = defineStore('user', {
       this.phone = info.phone ?? ''
       this.bindWx = info.bindWx ?? false
       this.isNewUser = info.isNewUser ?? false
+      this.deletionPending = info.deletionPending ?? false
+      this.deletionEffectiveTime = info.deletionEffectiveTime ?? ''
+    },
+    /** 同步注销状态（申请 / 撤销 / 查询后调用） */
+    setDeletion(pending: boolean, effectiveTime = '') {
+      this.deletionPending = pending
+      this.deletionEffectiveTime = pending ? effectiveTime : ''
     },
     resetLoginState() {
       this.$reset()

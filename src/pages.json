@@ -55,6 +55,9 @@
       "path": "pages/mine/profile"
     },
     {
+      "path": "pages/mine/deletion"
+    },
+    {
       "path": "pages/plate/index"
     },
     {

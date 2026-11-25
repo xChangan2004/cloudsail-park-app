@@ -9,6 +9,10 @@ export interface AppLoginVO {
   isNewUser?: boolean
   needBindPhone?: boolean
   bindWx?: boolean
+  /** 是否处于注销冷静期 */
+  deletionPending?: boolean
+  /** 注销生效时间（yyyy-MM-dd HH:mm:ss） */
+  deletionEffectiveTime?: string
 }
 
 export interface AppLoginDTO {
